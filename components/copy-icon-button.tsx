@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Copy, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -59,6 +59,18 @@ export function CopyIconButton({ text, onCopy, className }: CopyIconButtonProps)
   const [copied, setCopied] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
 
+  // Reset copied state when window loses focus
+  useEffect(() => {
+    const handleBlur = () => setCopied(false);
+    window.addEventListener("blur", handleBlur);
+    return () => window.removeEventListener("blur", handleBlur);
+  }, []);
+
+  // Reset copied state when text changes (different prompt being copied)
+  useEffect(() => {
+    setCopied(false);
+  }, [text]);
+
   const handleCopy = async (e: React.MouseEvent) => {
     e.stopPropagation();
 
@@ -67,10 +79,6 @@ export function CopyIconButton({ text, onCopy, className }: CopyIconButtonProps)
         await navigator.clipboard.writeText(text);
         setCopied(true);
         onCopy?.();
-
-        setTimeout(() => {
-          setCopied(false);
-        }, 1500);
       } else {
         const textArea = document.createElement("textarea");
         textArea.value = text;
@@ -87,10 +95,6 @@ export function CopyIconButton({ text, onCopy, className }: CopyIconButtonProps)
         if (success) {
           setCopied(true);
           onCopy?.();
-
-          setTimeout(() => {
-            setCopied(false);
-          }, 1500);
         }
       }
     } catch (error) {

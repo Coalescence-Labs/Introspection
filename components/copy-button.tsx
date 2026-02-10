@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Check, Copy } from "lucide-react";
 
 // Corner sparkle components for success animation
@@ -57,6 +57,18 @@ interface CopyButtonProps {
 export function CopyButton({ text, onCopy }: CopyButtonProps) {
   const [copied, setCopied] = useState(false);
 
+  // Reset copied state when window loses focus
+  useEffect(() => {
+    const handleBlur = () => setCopied(false);
+    window.addEventListener("blur", handleBlur);
+    return () => window.removeEventListener("blur", handleBlur);
+  }, []);
+
+  // Reset copied state when text changes (new prompt being copied)
+  useEffect(() => {
+    setCopied(false);
+  }, [text]);
+
   const handleCopy = async () => {
     try {
       // Try the modern clipboard API first
@@ -64,11 +76,6 @@ export function CopyButton({ text, onCopy }: CopyButtonProps) {
         await navigator.clipboard.writeText(text);
         setCopied(true);
         onCopy?.();
-
-        // Reset after 1.5s
-        setTimeout(() => {
-          setCopied(false);
-        }, 1500);
       } else {
         // Fallback for older browsers or insecure contexts
         const textArea = document.createElement("textarea");
@@ -86,10 +93,6 @@ export function CopyButton({ text, onCopy }: CopyButtonProps) {
         if (success) {
           setCopied(true);
           onCopy?.();
-
-          setTimeout(() => {
-            setCopied(false);
-          }, 1500);
         } else {
           throw new Error("Copy command failed");
         }
