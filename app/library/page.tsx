@@ -1,8 +1,10 @@
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CopyIconButton } from "@/components/copy-icon-button";
 import { loadQuestions } from "@/lib/content/loader";
-import type { Question, QuestionCategory } from "@/lib/content/schema";
+import type { Question, QuestionCategory, LLMType } from "@/lib/content/schema";
+import { generatePrompt } from "@/lib/prompt/engine";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
@@ -19,6 +21,8 @@ const categoryLabels: Record<QuestionCategory, string> = {
 export default function LibraryPage() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<QuestionCategory | "all">("all");
+  const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+  const [selectedLLM] = useState<LLMType>("claude"); // Default to Claude
 
   useEffect(() => {
     async function load() {
@@ -103,31 +107,57 @@ export default function LibraryPage() {
             >
               <h2 className="mb-6 text-2xl font-semibold">{categoryLabels[category]}</h2>
               <div className="space-y-3">
-                {categoryQuestions.map((question) => (
-                  <motion.div
-                    key={question.id}
-                    whileHover={{ x: 4 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <Card className="cursor-pointer border-l-4 border-l-accent/50 transition-all hover:border-l-accent hover:shadow-md">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-lg">{question.simpleText}</CardTitle>
-                        {question.tags && (
-                          <CardDescription className="flex gap-2">
-                            {question.tags.map((tag) => (
-                              <span
-                                key={tag}
-                                className="rounded-full bg-muted px-2 py-0.5 text-xs"
-                              >
-                                {tag}
-                              </span>
-                            ))}
-                          </CardDescription>
-                        )}
-                      </CardHeader>
-                    </Card>
-                  </motion.div>
-                ))}
+                {categoryQuestions.map((question) => {
+                  const isHovered = hoveredCard === question.id;
+                  const prompt = generatePrompt(question, {
+                    llm: selectedLLM,
+                    speechFriendly: false,
+                  });
+
+                  return (
+                    <motion.div
+                      key={question.id}
+                      whileHover={{ x: 4 }}
+                      transition={{ duration: 0.2 }}
+                      onMouseEnter={() => setHoveredCard(question.id)}
+                      onMouseLeave={() => setHoveredCard(null)}
+                    >
+                      <Card className="group relative cursor-pointer border-l-4 border-l-accent/50 transition-all hover:border-l-accent hover:shadow-md">
+                        <CardHeader className="pb-3">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                              <CardTitle className="text-lg">{question.simpleText}</CardTitle>
+                              {question.tags && (
+                                <CardDescription className="mt-2 flex gap-2">
+                                  {question.tags.map((tag) => (
+                                    <span
+                                      key={tag}
+                                      className="rounded-full bg-muted px-2 py-0.5 text-xs"
+                                    >
+                                      {tag}
+                                    </span>
+                                  ))}
+                                </CardDescription>
+                              )}
+                            </div>
+
+                            {/* Copy button - appears on hover */}
+                            <motion.div
+                              initial={{ opacity: 0, scale: 0.8 }}
+                              animate={{
+                                opacity: isHovered ? 1 : 0,
+                                scale: isHovered ? 1 : 0.8,
+                              }}
+                              transition={{ duration: 0.2 }}
+                            >
+                              <CopyIconButton text={prompt.fullPrompt} />
+                            </motion.div>
+                          </div>
+                        </CardHeader>
+                      </Card>
+                    </motion.div>
+                  );
+                })}
               </div>
             </motion.div>
           );
