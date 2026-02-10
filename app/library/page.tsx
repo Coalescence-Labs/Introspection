@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CopyIconButton } from "@/components/copy-icon-button";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { loadQuestions } from "@/lib/content/loader";
 import type { Question, QuestionCategory, LLMType } from "@/lib/content/schema";
 import { generatePrompt } from "@/lib/prompt/engine";
@@ -51,12 +52,15 @@ export default function LibraryPage() {
     <main className="mx-auto min-h-screen max-w-4xl px-6 py-20">
       {/* Header */}
       <div className="mb-12">
-        <Link
-          href="/"
-          className="mb-8 inline-block text-sm text-muted-foreground transition-colors hover:text-foreground"
-        >
-          ← Back to today
-        </Link>
+        <div className="mb-8 flex items-center justify-between">
+          <Link
+            href="/"
+            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            ← Back to today
+          </Link>
+          <ThemeToggle />
+        </div>
         <h1 className="text-4xl font-bold">Question Library</h1>
         <p className="mt-2 text-muted-foreground">
           Browse all introspection questions by category

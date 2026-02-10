@@ -5,6 +5,7 @@ import { LLMSelector } from "@/components/llm-selector";
 import { PromptPreview } from "@/components/prompt-preview";
 import { QuestionHero } from "@/components/question-hero";
 import { SpeechToggle } from "@/components/speech-toggle";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { loadQuestions, loadTodayConfig } from "@/lib/content/loader";
 import { getTodayQuestion } from "@/lib/content/rotation";
 import type { LLMType, Question } from "@/lib/content/schema";
@@ -69,8 +70,11 @@ export default function TodayPage() {
         >
           Browse all questions →
         </Link>
-        <div className="text-xs text-muted-foreground">
-          Daily Question • {getTodayString()}
+        <div className="flex items-center gap-4">
+          <div className="text-xs text-muted-foreground">
+            Daily Question • {getTodayString()}
+          </div>
+          <ThemeToggle />
         </div>
       </div>
 
