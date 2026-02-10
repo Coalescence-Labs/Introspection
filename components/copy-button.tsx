@@ -113,26 +113,31 @@ export function CopyButton({ text, onCopy }: CopyButtonProps) {
         )}
       </AnimatePresence>
 
-      <Button
-        variant="accent"
-        size="xl"
-        onClick={handleCopy}
-        className="relative min-w-[240px] overflow-visible"
+      <motion.div
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.96 }}
+        transition={{ type: "spring", stiffness: 400, damping: 17 }}
       >
+        <Button
+          variant="accent"
+          size="xl"
+          onClick={handleCopy}
+          className="relative w-[280px] overflow-visible"
+        >
         <AnimatePresence mode="wait">
           {copied ? (
             <motion.div
               key="copied"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              transition={{ type: "spring", stiffness: 400, damping: 25 }}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ type: "spring", stiffness: 500, damping: 30 }}
               className="flex items-center gap-2"
             >
               <motion.div
-                initial={{ scale: 0, rotate: -180 }}
+                initial={{ scale: 0, rotate: -90 }}
                 animate={{ scale: 1, rotate: 0 }}
-                transition={{ type: "spring", stiffness: 500, damping: 20 }}
+                transition={{ type: "spring", stiffness: 600, damping: 20 }}
               >
                 <Check className="h-5 w-5" />
               </motion.div>
@@ -141,10 +146,10 @@ export function CopyButton({ text, onCopy }: CopyButtonProps) {
           ) : (
             <motion.div
               key="copy"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              transition={{ type: "spring", stiffness: 400, damping: 25 }}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ type: "spring", stiffness: 500, damping: 30 }}
               className="flex items-center gap-2"
             >
               <Copy className="h-5 w-5" />
@@ -152,7 +157,8 @@ export function CopyButton({ text, onCopy }: CopyButtonProps) {
             </motion.div>
           )}
         </AnimatePresence>
-      </Button>
+        </Button>
+      </motion.div>
     </div>
   );
 }

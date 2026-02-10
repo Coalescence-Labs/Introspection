@@ -125,8 +125,9 @@ export function CopyIconButton({ text, onCopy, className }: CopyIconButtonProps)
           "relative flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background transition-colors hover:border-accent hover:bg-accent/10",
           className
         )}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
+        whileHover={{ scale: 1.08 }}
+        whileTap={{ scale: 0.92 }}
+        transition={{ type: "spring", stiffness: 400, damping: 17 }}
         type="button"
       >
         {/* Corner sparkles - appear when copied */}
@@ -144,20 +145,20 @@ export function CopyIconButton({ text, onCopy, className }: CopyIconButtonProps)
           {copied ? (
             <motion.div
               key="check"
-              initial={{ scale: 0, rotate: -180 }}
+              initial={{ scale: 0, rotate: -90 }}
               animate={{ scale: 1, rotate: 0 }}
-              exit={{ scale: 0, rotate: 180 }}
-              transition={{ type: "spring", stiffness: 400, damping: 20 }}
+              exit={{ scale: 0, rotate: 90 }}
+              transition={{ type: "spring", stiffness: 600, damping: 20 }}
             >
               <Check className="h-4 w-4 text-accent" />
             </motion.div>
           ) : (
             <motion.div
               key="copy"
-              initial={{ scale: 0, rotate: -180 }}
+              initial={{ scale: 0, rotate: -90 }}
               animate={{ scale: 1, rotate: 0 }}
-              exit={{ scale: 0, rotate: 180 }}
-              transition={{ type: "spring", stiffness: 400, damping: 20 }}
+              exit={{ scale: 0, rotate: 90 }}
+              transition={{ type: "spring", stiffness: 600, damping: 20 }}
             >
               <Copy className="h-4 w-4 text-muted-foreground" />
             </motion.div>
