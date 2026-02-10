@@ -100,50 +100,58 @@ export default function TodayPage() {
   }
 
   return (
-    <main className="mx-auto min-h-screen max-w-4xl px-6 py-16 sm:py-20">
-      {/* Header */}
-      <div className="mb-16 sm:mb-20 flex items-center justify-between">
-        <Link
-          href="/library"
-          className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-        >
-          Browse all questions →
-        </Link>
-        <div className="flex items-center gap-4">
-          <div className="text-xs text-muted-foreground">
-            Daily Question • {getTodayString()}
+    <main className="mx-auto max-w-4xl px-6">
+      <div className="flex min-h-screen flex-col py-16 sm:py-20">
+        {/* Header */}
+        <div className="mb-16 sm:mb-20 flex items-center justify-between">
+          <Link
+            href="/library"
+            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            Browse all questions →
+          </Link>
+          <div className="flex items-center gap-4">
+            <div className="text-xs text-muted-foreground">
+              Daily Question • {getTodayString()}
+            </div>
+            <ThemeToggle />
           </div>
-          <ThemeToggle />
         </div>
+
+        {/* Hero Question */}
+        <div className="mb-16 sm:mb-20">
+          <QuestionHero question={question.simpleText} />
+        </div>
+
+        {/* LLM Selector */}
+        <div className="mb-10">
+          <LLMSelector selected={selectedLLM} onSelect={setSelectedLLM} />
+        </div>
+
+        {/* Speech-Friendly Toggle */}
+        <div className="mb-10">
+          <SpeechToggle enabled={speechFriendly} onToggle={setSpeechFriendly} />
+        </div>
+
+        {/* Vertical spacer - pushes copy button to center of remaining space */}
+        <div className="flex-1" />
+
+        {/* Copy Button */}
+        <div className="flex justify-center">
+          <CopyButton text={generatedPrompt.fullPrompt} />
+        </div>
+
+        {/* Vertical spacer - equal space below copy button */}
+        <div className="flex-1" />
       </div>
 
-      {/* Hero Question */}
-      <div className="mb-16 sm:mb-20">
-        <QuestionHero question={question.simpleText} />
-      </div>
-
-      {/* LLM Selector */}
-      <div className="mb-10">
-        <LLMSelector selected={selectedLLM} onSelect={setSelectedLLM} />
-      </div>
-
-      {/* Speech-Friendly Toggle */}
-      <div className="mb-10">
-        <SpeechToggle enabled={speechFriendly} onToggle={setSpeechFriendly} />
-      </div>
-
-      {/* Copy Button */}
-      <div className="mb-12 flex justify-center">
-        <CopyButton text={generatedPrompt.fullPrompt} />
-      </div>
-
-      {/* Prompt Preview */}
-      <div className="mb-12">
+      {/* Prompt Preview - below the fold */}
+      <div className="pb-12">
         <PromptPreview title={generatedPrompt.title} fullPrompt={generatedPrompt.fullPrompt} />
       </div>
 
       {/* Footer */}
-      <footer className="mt-32 text-center text-xs text-muted-foreground">
+      <footer className="pb-16 text-center text-xs text-muted-foreground">
         <p>Introspection - Reflect on your AI conversations</p>
       </footer>
     </main>
