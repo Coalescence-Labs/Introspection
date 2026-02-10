@@ -1,0 +1,236 @@
+INTROSPECTION - PROJECT VISION OUTLINE
+=====================================
+
+PROJECT OVERVIEW
+-----------------
+Introspection is a simple web application designed to help users gain deeper insights from their past AI conversations. It provides thoughtfully crafted introspection questions that users can copy and paste into their LLM of choice (Claude, ChatGPT, Gemini, Perplexity), with prompts optimized specifically for each platform.
+
+THE PROBLEM WE'RE SOLVING
+--------------------------
+People have countless conversations with AI assistants but rarely step back to analyze patterns, extract insights, or identify actionable next steps. Introspection makes this reflection effortless by providing:
+- Curated questions designed to unlock insights
+- LLM-optimized prompts for better responses
+- Simple copy-paste workflow (no API integrations needed)
+
+CORE CONCEPT
+------------
+The application uses a "two-layer design":
+1. WHAT USERS SEE: Simple, clear questions like "What's the craziest thing I've thought of so far?"
+2. WHAT GETS COPIED: Comprehensive, LLM-optimized prompts with explicit instructions, proper structure, and context that maximize response quality
+
+KEY FEATURES
+------------
+
+1. CURATED QUESTION LIBRARY
+   - Categories: Career Development, Idea Mining, Learning Optimization, Pattern Recognition
+   - Example questions:
+     * "What's the craziest thing I've thought of so far?"
+     * "What new topic would be best for me to explore next?"
+     * "What can I specifically do to make the next step in my career?"
+   - Daily question rotation
+   - Browsable catalog
+
+2. LLM-SPECIFIC OPTIMIZATION
+   Supported LLMs: Claude (Anthropic), ChatGPT (OpenAI), Gemini (Google), Perplexity
+
+   Each LLM has unique strengths and responds best to different prompt styles:
+
+   CLAUDE (ANTHROPIC):
+   - Strengths: Long context, nuanced analysis, complex instructions
+   - Best practices: Use XML tags for structure, explicit instructions, detailed context
+   - Template approach: <context>, <task> tags with step-by-step analysis requests
+
+   CHATGPT (OPENAI):
+   - Strengths: Conversational, creative, balanced responses
+   - Best practices: Direct tone, numbered lists, clear commands
+   - Template approach: Conversational format with structured output requests
+
+   GEMINI (GOOGLE):
+   - Strengths: Factual accuracy, structured output, multimodal
+   - Best practices: Concise instructions, explicit format requests
+   - Template approach: Task-based with clear output format specification
+
+   PERPLEXITY:
+   - Strengths: Research-focused, source citation, analytical
+   - Best practices: Frame as research questions, evidence-based analysis
+   - Template approach: Research question format with analytical requirements
+
+3. SPEECH-FRIENDLY RESPONSES
+   - Optional toggle: "Include speech-friendly version for TTS"
+   - When enabled, prompts instruct LLM to provide TWO versions:
+     a) Standard formatted response
+     b) Speech-friendly narrative (no markdown, natural flow, optimized for text-to-speech)
+   - Compatible with: LLM native voice features, ElevenLabs, any TTS service
+   - Key optimizations: Remove formatting, spell out acronyms, natural pauses, moderate sentence length (15-20 words)
+
+4. SIMPLE COPY-PASTE WORKFLOW
+   - User selects a question
+   - User chooses their LLM
+   - User optionally enables speech-friendly mode
+   - User clicks "Copy Prompt to Clipboard"
+   - User pastes into their LLM conversation
+   - No API keys, no integrations, works with any LLM interface
+
+DESIGN PHILOSOPHY
+-----------------
+"LESS IS MORE. WHAT REMAINS IS BOLD."
+
+Awwwards-level design with dramatic visual impact:
+
+VISUAL HIERARCHY:
+- Questions are the hero: 48-72px bold typography (vs typical 16-24px)
+- Secondary elements whisper: 14-16px, receded treatment
+- Massive contrast through scale, not color competition
+
+LAYOUT PRINCIPLES:
+- 60-70% of screen can be empty space
+- Generous vertical spacing: 80-120px between sections
+- Centered, focused layouts (max-width: 900px)
+- No sidebars, no clutter, no density
+
+TYPOGRAPHY:
+- Display font for questions (Inter Display, Cabinet Grotesk, Clash Display)
+- Clean sans-serif for body (Inter, SF Pro Text)
+- Type scale: Hero 48-72px, Body 16-18px, Small 14px
+
+COLOR STRATEGY:
+- Minimal palette: Pure white or subtle tint background
+- Near-black text (#1A1A1A)
+- ONE bold accent color (deep purple, electric blue, vibrant orange)
+- When accent appears, it POPS
+- Dark mode: Invert with care, maintain impact
+
+INTERACTIVE ELEMENTS:
+- Large touch targets (minimum 48px)
+- Bold buttons with generous padding
+- LLM selector: Visual cards (120-150px), not dropdowns
+- Smooth animations: Purposeful, not gratuitous (200-300ms)
+- Copy button: Prominent with success animation (checkmark bounce)
+
+DESIGN INSPIRATION:
+- Linear, Stripe, Pitch, Arc Browser (minimalism with impact)
+- Apple product pages (bold typography)
+- Notion Calendar, Things 3 (clean interfaces)
+
+RESPONSIVE:
+- Mobile < 640px: Scale to 32-48px bold text, maintain impact
+- Tablet 640-1024px: Adjust spacing proportionally
+- Desktop > 1024px: Full 72px hero typography
+
+USER EXPERIENCE FLOW
+---------------------
+1. User lands on homepage
+2. Sees today's featured question in massive, bold text
+3. Scrolls to see 4 LLM options as visual cards
+4. Selects their preferred LLM (card highlights)
+5. Optionally checks "Include speech-friendly version for TTS"
+6. Clicks large "Copy Prompt to Clipboard" button
+7. Sees success animation: checkmark + "Copied!"
+8. Pastes into their LLM chat interface
+9. Receives optimized response from LLM
+10. Can browse question library for other prompts
+
+TECHNICAL ARCHITECTURE (PLANNED)
+---------------------------------
+- Frontend: React, Vue, or Svelte (TBD)
+- Styling: Tailwind CSS with custom config for design system
+- State Management: Simple local state (useState/reactive)
+- Data Storage: JSON file for question library
+- Animations: Framer Motion or CSS transitions
+- Clipboard API: navigator.clipboard for copy functionality
+- Hosting: Vercel, Netlify, or GitHub Pages
+- No backend needed (static site)
+- No API integrations (copy-paste workflow)
+
+IMPLEMENTATION PHASES
+---------------------
+PHASE 1: FOUNDATION
+- Define tech stack and initialize project
+- Create core question library (JSON structure)
+- Implement prompt generation engine
+
+PHASE 2: CORE UI
+- Build main layout with hero question section
+- Create LLM selector component (visual cards)
+- Implement copy-to-clipboard functionality
+- Add speech-friendly toggle
+
+PHASE 3: FEATURES & POLISH
+- Implement daily question rotation
+- Add animations and micro-interactions
+- Implement dark mode support
+- Create browsable question library view
+
+PHASE 4: LAUNCH
+- Test across devices and browsers
+- Deploy to hosting platform
+- Share with users
+
+DATA STRUCTURE EXAMPLES
+-----------------------
+QUESTION LIBRARY STRUCTURE:
+{
+  "questions": [
+    {
+      "id": "career-001",
+      "category": "Career Development",
+      "simple_text": "What can I specifically do to make the next step in my career?",
+      "frequency": "weekly",
+      "tags": ["career", "action", "growth"]
+    },
+    {
+      "id": "ideas-001",
+      "category": "Idea Mining",
+      "simple_text": "What's the craziest thing I've thought of so far?",
+      "frequency": "daily",
+      "tags": ["creativity", "brainstorm", "patterns"]
+    }
+  ]
+}
+
+PROMPT GENERATION OUTPUT:
+{
+  "simple_question": "What's the craziest thing I've thought of so far?",
+  "llm_type": "claude",
+  "has_tts": true,
+  "full_prompt": "<context>Review our conversation history...</context><task>Identify the most creative or unconventional ideas...</task>..."
+}
+
+SUCCESS CRITERIA
+----------------
+A successful implementation will:
+1. Make the question feel important (like something worth pondering)
+2. Make actions obvious (no hunting for buttons)
+3. Feel calm (not anxious or rushed)
+4. Feel premium (polished, intentional, crafted)
+5. Work beautifully on any device
+6. Generate noticeably better LLM responses than generic questions
+
+FUTURE ENHANCEMENTS (POST-MVP)
+------------------------------
+- Custom question creation
+- Save favorite questions
+- Browser extension for quick access
+- Question scheduling/reminders
+- Export conversation summaries
+- Integration with conversation export tools
+- Community-contributed questions
+- Analytics on most useful questions
+
+PHILOSOPHY
+----------
+Introspection is built on these beliefs:
+1. Our AI conversations contain valuable insights we often overlook
+2. The right questions unlock the right answers
+3. Tools should be simple, not complicated
+4. Different AIs respond best to different prompt styles
+5. Design for contemplation, not productivity
+6. Every pixel should serve the moment of introspection
+
+PROJECT STATUS
+--------------
+Current: Documentation and planning phase complete
+Next: Begin implementation (tech stack selection and project initialization)
+Target: Minimal viable product with core features (questions, LLM selection, copy-paste, speech-friendly mode)
+
+This project prioritizes simplicity, visual impact, and user value over technical complexity.
