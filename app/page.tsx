@@ -52,6 +52,45 @@ export default function TodayPage() {
     }
   }, [question, selectedLLM, speechFriendly]);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const llms: LLMType[] = ["claude", "chatgpt", "gemini", "perplexity"];
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if user is typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      // Arrow keys: switch LLM
+      if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+        e.preventDefault();
+        const currentIndex = llms.indexOf(selectedLLM);
+        const nextIndex = e.key === "ArrowRight"
+          ? (currentIndex + 1) % llms.length
+          : (currentIndex - 1 + llms.length) % llms.length;
+        setSelectedLLM(llms[nextIndex]);
+      }
+
+      // "T" key: toggle speech-friendly
+      if (e.key === "t" || e.key === "T") {
+        e.preventDefault();
+        setSpeechFriendly((prev) => !prev);
+      }
+
+      // "C" key: trigger copy
+      if (e.key === "c" || e.key === "C") {
+        e.preventDefault();
+        if (generatedPrompt) {
+          navigator.clipboard.writeText(generatedPrompt.fullPrompt).catch(console.error);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedLLM, speechFriendly, generatedPrompt]);
+
   if (!question || !generatedPrompt) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -61,9 +100,9 @@ export default function TodayPage() {
   }
 
   return (
-    <main className="mx-auto min-h-screen max-w-4xl px-6 py-20">
+    <main className="mx-auto min-h-screen max-w-4xl px-6 py-16 sm:py-20">
       {/* Header */}
-      <div className="mb-20 flex items-center justify-between">
+      <div className="mb-16 sm:mb-20 flex items-center justify-between">
         <Link
           href="/library"
           className="text-sm text-muted-foreground transition-colors hover:text-foreground"
@@ -79,7 +118,7 @@ export default function TodayPage() {
       </div>
 
       {/* Hero Question */}
-      <div className="mb-20">
+      <div className="mb-16 sm:mb-20">
         <QuestionHero question={question.simpleText} />
       </div>
 
@@ -89,7 +128,7 @@ export default function TodayPage() {
       </div>
 
       {/* Speech-Friendly Toggle */}
-      <div className="mb-12">
+      <div className="mb-10">
         <SpeechToggle enabled={speechFriendly} onToggle={setSpeechFriendly} />
       </div>
 
@@ -99,12 +138,12 @@ export default function TodayPage() {
       </div>
 
       {/* Prompt Preview */}
-      <div className="mb-8">
+      <div className="mb-12">
         <PromptPreview title={generatedPrompt.title} fullPrompt={generatedPrompt.fullPrompt} />
       </div>
 
       {/* Footer */}
-      <footer className="mt-20 text-center text-xs text-muted-foreground">
+      <footer className="mt-32 text-center text-xs text-muted-foreground">
         <p>Introspection - Reflect on your AI conversations</p>
       </footer>
     </main>

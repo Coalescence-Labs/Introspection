@@ -57,12 +57,13 @@ interface CopyButtonProps {
 export function CopyButton({ text, onCopy }: CopyButtonProps) {
   const [copied, setCopied] = useState(false);
 
-  // Reset copied state when window loses focus
+  // Auto-reset after 1.5s
   useEffect(() => {
-    const handleBlur = () => setCopied(false);
-    window.addEventListener("blur", handleBlur);
-    return () => window.removeEventListener("blur", handleBlur);
-  }, []);
+    if (copied) {
+      const timer = setTimeout(() => setCopied(false), 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [copied]);
 
   // Reset copied state when text changes (new prompt being copied)
   useEffect(() => {

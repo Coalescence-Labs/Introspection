@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { Commissioner } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "next-themes";
 
@@ -18,6 +19,12 @@ const satoshi = localFont({
   display: "swap",
 });
 
+const commissioner = Commissioner({
+  subsets: ["latin"],
+  variable: "--font-commissioner",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "Introspection - Reflect on Your AI Conversations",
   description:
@@ -31,7 +38,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={satoshi.variable}>
+      <body className={`${satoshi.variable} ${commissioner.variable}`}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           {children}
         </ThemeProvider>

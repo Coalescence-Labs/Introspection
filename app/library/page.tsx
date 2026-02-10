@@ -49,7 +49,7 @@ export default function LibraryPage() {
   );
 
   return (
-    <main className="mx-auto min-h-screen max-w-4xl px-6 py-20">
+    <main className="mx-auto min-h-screen max-w-4xl px-6 py-24 sm:py-32">
       {/* Header */}
       <div className="mb-12">
         <div className="mb-8 flex items-center justify-between">

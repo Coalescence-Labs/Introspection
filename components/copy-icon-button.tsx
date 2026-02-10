@@ -59,12 +59,13 @@ export function CopyIconButton({ text, onCopy, className }: CopyIconButtonProps)
   const [copied, setCopied] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
 
-  // Reset copied state when window loses focus
+  // Auto-reset after 1.5s
   useEffect(() => {
-    const handleBlur = () => setCopied(false);
-    window.addEventListener("blur", handleBlur);
-    return () => window.removeEventListener("blur", handleBlur);
-  }, []);
+    if (copied) {
+      const timer = setTimeout(() => setCopied(false), 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [copied]);
 
   // Reset copied state when text changes (different prompt being copied)
   useEffect(() => {
