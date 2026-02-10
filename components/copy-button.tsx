@@ -5,28 +5,47 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { Check, Copy } from "lucide-react";
 
-// Sparkle component for success animation
-function Sparkle({ delay, angle }: { delay: number; angle: number }) {
-  const distance = 30;
-  const x = Math.cos(angle) * distance;
-  const y = Math.sin(angle) * distance;
+// Corner sparkle components for success animation
+function CornerSparkle({ corner, delay }: { corner: "top-right" | "bottom-left"; delay: number }) {
+  const isTopRight = corner === "top-right";
 
   return (
     <motion.div
-      className="absolute left-1/2 top-1/2 h-1.5 w-1.5 rounded-full bg-accent"
-      initial={{ scale: 0, x: 0, y: 0, opacity: 1 }}
-      animate={{
-        scale: [0, 1, 0.5, 0],
-        x: [0, x * 0.5, x, x * 1.2],
-        y: [0, y * 0.5, y, y * 1.2],
-        opacity: [1, 1, 0.8, 0],
-      }}
-      transition={{
-        duration: 0.8,
-        delay,
-        ease: "easeOut",
-      }}
-    />
+      className={`absolute ${isTopRight ? "-top-2 -right-2" : "-bottom-2 -left-2"}`}
+      initial={{ scale: 0, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      exit={{ scale: 0, opacity: 0 }}
+      transition={{ duration: 0.3, delay }}
+    >
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <motion.path
+          d="M10 0L11 9L10 10L9 9L10 0Z"
+          fill="currentColor"
+          className="text-accent"
+          initial={{ pathLength: 0, opacity: 0 }}
+          animate={{ pathLength: 1, opacity: [0, 1, 1, 0] }}
+          transition={{ duration: 0.6, delay }}
+        />
+        <motion.path
+          d="M20 10L11 9L10 10L11 11L20 10Z"
+          fill="currentColor"
+          className="text-accent"
+          initial={{ pathLength: 0, opacity: 0 }}
+          animate={{ pathLength: 1, opacity: [0, 1, 1, 0] }}
+          transition={{ duration: 0.6, delay: delay + 0.1 }}
+        />
+        <motion.circle
+          cx="10"
+          cy="10"
+          r="2"
+          fill="currentColor"
+          className="text-accent"
+          initial={{ scale: 0 }}
+          animate={{ scale: [0, 1.2, 0] }}
+          transition={{ duration: 0.5, delay: delay + 0.05 }}
+        />
+      </svg>
+    </motion.div>
   );
 }
 
@@ -84,13 +103,12 @@ export function CopyButton({ text, onCopy }: CopyButtonProps) {
 
   return (
     <div className="relative">
-      {/* Sparkle particles - appear outside button on success */}
+      {/* Corner sparkles - appear outside button on success */}
       <AnimatePresence>
         {copied && (
           <>
-            {[...Array(8)].map((_, i) => (
-              <Sparkle key={i} delay={i * 0.05} angle={(Math.PI * 2 * i) / 8} />
-            ))}
+            <CornerSparkle corner="top-right" delay={0} />
+            <CornerSparkle corner="bottom-left" delay={0.1} />
           </>
         )}
       </AnimatePresence>

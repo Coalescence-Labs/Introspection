@@ -11,24 +11,47 @@ interface CopyIconButtonProps {
   className?: string;
 }
 
-// Particle component for sparkle effect
-function Particle({ delay }: { delay: number }) {
+// Corner sparkle for success animation
+function CornerSparkle({ corner, delay }: { corner: "top-right" | "bottom-left"; delay: number }) {
+  const isTopRight = corner === "top-right";
+
   return (
     <motion.div
-      className="absolute h-1 w-1 rounded-full bg-accent"
-      initial={{ scale: 0, x: 0, y: 0, opacity: 1 }}
-      animate={{
-        scale: [0, 1, 0],
-        x: [0, Math.random() * 40 - 20],
-        y: [0, Math.random() * 40 - 20],
-        opacity: [1, 1, 0],
-      }}
-      transition={{
-        duration: 0.6,
-        delay,
-        ease: "easeOut",
-      }}
-    />
+      className={`absolute ${isTopRight ? "-top-1 -right-1" : "-bottom-1 -left-1"}`}
+      initial={{ scale: 0, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      exit={{ scale: 0, opacity: 0 }}
+      transition={{ duration: 0.3, delay }}
+    >
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+        <motion.path
+          d="M6 0L6.5 5.5L6 6L5.5 5.5L6 0Z"
+          fill="currentColor"
+          className="text-accent"
+          initial={{ pathLength: 0, opacity: 0 }}
+          animate={{ pathLength: 1, opacity: [0, 1, 1, 0] }}
+          transition={{ duration: 0.5, delay }}
+        />
+        <motion.path
+          d="M12 6L6.5 5.5L6 6L6.5 6.5L12 6Z"
+          fill="currentColor"
+          className="text-accent"
+          initial={{ pathLength: 0, opacity: 0 }}
+          animate={{ pathLength: 1, opacity: [0, 1, 1, 0] }}
+          transition={{ duration: 0.5, delay: delay + 0.08 }}
+        />
+        <motion.circle
+          cx="6"
+          cy="6"
+          r="1.5"
+          fill="currentColor"
+          className="text-accent"
+          initial={{ scale: 0 }}
+          animate={{ scale: [0, 1.2, 0] }}
+          transition={{ duration: 0.4, delay: delay + 0.04 }}
+        />
+      </svg>
+    </motion.div>
   );
 }
 
@@ -106,13 +129,12 @@ export function CopyIconButton({ text, onCopy, className }: CopyIconButtonProps)
         whileTap={{ scale: 0.95 }}
         type="button"
       >
-        {/* Particles - appear when copied */}
+        {/* Corner sparkles - appear when copied */}
         <AnimatePresence>
           {copied && (
             <>
-              {[...Array(6)].map((_, i) => (
-                <Particle key={i} delay={i * 0.05} />
-              ))}
+              <CornerSparkle corner="top-right" delay={0} />
+              <CornerSparkle corner="bottom-left" delay={0.08} />
             </>
           )}
         </AnimatePresence>
