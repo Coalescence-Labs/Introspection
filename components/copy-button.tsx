@@ -15,16 +15,45 @@ export function CopyButton({ text, onCopy }: CopyButtonProps) {
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      onCopy?.();
+      // Try the modern clipboard API first
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        setCopied(true);
+        onCopy?.();
 
-      // Reset after 1.5s
-      setTimeout(() => {
-        setCopied(false);
-      }, 1500);
+        // Reset after 1.5s
+        setTimeout(() => {
+          setCopied(false);
+        }, 1500);
+      } else {
+        // Fallback for older browsers or insecure contexts
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        textArea.style.top = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+
+        const success = document.execCommand("copy");
+        document.body.removeChild(textArea);
+
+        if (success) {
+          setCopied(true);
+          onCopy?.();
+
+          setTimeout(() => {
+            setCopied(false);
+          }, 1500);
+        } else {
+          throw new Error("Copy command failed");
+        }
+      }
     } catch (error) {
       console.error("Failed to copy:", error);
+      // Show error to user
+      alert("Failed to copy to clipboard. Please try selecting and copying the text manually.");
     }
   };
 
