@@ -1,9 +1,9 @@
 import type { Question } from "@/lib/content/schema";
-import { claudeTemplate } from "./templates/claude";
 import { chatgptTemplate } from "./templates/chatgpt";
+import { claudeTemplate } from "./templates/claude";
 import { geminiTemplate } from "./templates/gemini";
 import { perplexityTemplate } from "./templates/perplexity";
-import type { GeneratePromptOptions, GeneratedPrompt, PromptTemplate } from "./types";
+import type { GeneratedPrompt, GeneratePromptOptions, PromptTemplate } from "./types";
 
 const templates: Record<string, PromptTemplate> = {
   claude: claudeTemplate,

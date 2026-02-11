@@ -1,9 +1,9 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Check, Copy } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 
 // Corner sparkle components for success animation
 function CornerSparkle({ corner, delay }: { corner: "top-right" | "bottom-left"; delay: number }) {
@@ -17,7 +17,7 @@ function CornerSparkle({ corner, delay }: { corner: "top-right" | "bottom-left";
       exit={{ scale: 0, opacity: 0 }}
       transition={{ duration: 0.3, delay }}
     >
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
         <motion.path
           d="M10 0L11 9L10 10L9 9L10 0Z"
           fill="currentColor"
@@ -66,6 +66,7 @@ export function CopyButton({ text, onCopy }: CopyButtonProps) {
   }, [copied]);
 
   // Reset copied state when text changes (new prompt being copied)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: text dependency is intentional
   useEffect(() => {
     setCopied(false);
   }, [text]);
@@ -73,7 +74,7 @@ export function CopyButton({ text, onCopy }: CopyButtonProps) {
   const handleCopy = async () => {
     try {
       // Try the modern clipboard API first
-      if (navigator.clipboard && navigator.clipboard.writeText) {
+      if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(text);
         setCopied(true);
         onCopy?.();
@@ -128,39 +129,39 @@ export function CopyButton({ text, onCopy }: CopyButtonProps) {
           onClick={handleCopy}
           className="relative w-[280px] overflow-visible"
         >
-        <AnimatePresence mode="wait">
-          {copied ? (
-            <motion.div
-              key="copied"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ type: "spring", stiffness: 500, damping: 30 }}
-              className="flex items-center gap-2"
-            >
+          <AnimatePresence mode="wait">
+            {copied ? (
               <motion.div
-                initial={{ scale: 0, rotate: -90 }}
-                animate={{ scale: 1, rotate: 0 }}
-                transition={{ type: "spring", stiffness: 600, damping: 20 }}
+                key="copied"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                className="flex items-center gap-2"
               >
-                <Check className="h-5 w-5" />
+                <motion.div
+                  initial={{ scale: 0, rotate: -90 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: "spring", stiffness: 600, damping: 20 }}
+                >
+                  <Check className="h-5 w-5" />
+                </motion.div>
+                Copied!
               </motion.div>
-              Copied!
-            </motion.div>
-          ) : (
-            <motion.div
-              key="copy"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ type: "spring", stiffness: 500, damping: 30 }}
-              className="flex items-center gap-2"
-            >
-              <Copy className="h-5 w-5" />
-              Copy Prompt to Clipboard
-            </motion.div>
-          )}
-        </AnimatePresence>
+            ) : (
+              <motion.div
+                key="copy"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                className="flex items-center gap-2"
+              >
+                <Copy className="h-5 w-5" />
+                Copy Prompt to Clipboard
+              </motion.div>
+            )}
+          </AnimatePresence>
         </Button>
       </motion.div>
     </div>

@@ -1,13 +1,13 @@
 "use client";
 
+import Link from "next/link";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { loadQuestions, loadTodayConfig } from "@/lib/content/loader";
 import { getTodayQuestion } from "@/lib/content/rotation";
 import type { LLMType, Question } from "@/lib/content/schema";
 import { generatePrompt } from "@/lib/prompt/engine";
 import { getTodayString } from "@/lib/utils";
-import Link from "next/link";
-import { useEffect, useState } from "react";
 
 const llms: LLMType[] = ["claude", "chatgpt", "gemini", "perplexity"];
 

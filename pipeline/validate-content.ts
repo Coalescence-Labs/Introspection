@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
-import { QuestionLibrary } from "@/lib/content/schema";
 import { questions } from "@/content/questions";
+import { QuestionLibrary } from "@/lib/content/schema";
 
 /**
  * Validate content against Zod schema

@@ -1,14 +1,14 @@
 "use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CopyIconButton } from "@/components/copy-icon-button";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { loadQuestions } from "@/lib/content/loader";
-import type { Question, QuestionCategory, LLMType } from "@/lib/content/schema";
-import { generatePrompt } from "@/lib/prompt/engine";
+import { motion } from "framer-motion";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { CopyIconButton } from "@/components/copy-icon-button";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { loadQuestions } from "@/lib/content/loader";
+import type { LLMType, Question, QuestionCategory } from "@/lib/content/schema";
+import { generatePrompt } from "@/lib/prompt/engine";
 
 const categoryLabels: Record<QuestionCategory, string> = {
   career: "Career & Growth",
@@ -62,9 +62,7 @@ export default function LibraryPage() {
           <ThemeToggle />
         </div>
         <h1 className="text-4xl font-bold">Question Library</h1>
-        <p className="mt-2 text-muted-foreground">
-          Browse all introspection questions by category
-        </p>
+        <p className="mt-2 text-muted-foreground">Browse all introspection questions by category</p>
       </div>
 
       {/* Category Filters */}

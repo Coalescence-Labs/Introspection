@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { useEffect, useState } from "react";
 import { CopyButton } from "@/components/copy-button";
 import { LLMSelector } from "@/components/llm-selector";
 import { PromptPreview } from "@/components/prompt-preview";
@@ -11,8 +13,6 @@ import { getTodayQuestion } from "@/lib/content/rotation";
 import type { LLMType, Question } from "@/lib/content/schema";
 import { generatePrompt } from "@/lib/prompt/engine";
 import { getTodayString } from "@/lib/utils";
-import Link from "next/link";
-import { useEffect, useState } from "react";
 
 export default function TodayPage() {
   const [question, setQuestion] = useState<Question | null>(null);
@@ -66,9 +66,10 @@ export default function TodayPage() {
       if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
         e.preventDefault();
         const currentIndex = llms.indexOf(selectedLLM);
-        const nextIndex = e.key === "ArrowRight"
-          ? (currentIndex + 1) % llms.length
-          : (currentIndex - 1 + llms.length) % llms.length;
+        const nextIndex =
+          e.key === "ArrowRight"
+            ? (currentIndex + 1) % llms.length
+            : (currentIndex - 1 + llms.length) % llms.length;
         setSelectedLLM(llms[nextIndex]);
       }
 
@@ -89,7 +90,7 @@ export default function TodayPage() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedLLM, speechFriendly, generatedPrompt]);
+  }, [selectedLLM, generatedPrompt]);
 
   if (!question || !generatedPrompt) {
     return (
@@ -111,9 +112,7 @@ export default function TodayPage() {
             Browse all questions →
           </Link>
           <div className="flex items-center gap-4">
-            <div className="text-xs text-muted-foreground">
-              Daily Question • {getTodayString()}
-            </div>
+            <div className="text-xs text-muted-foreground">Daily Question • {getTodayString()}</div>
             <ThemeToggle />
           </div>
         </div>

@@ -1,5 +1,5 @@
-import { QuestionLibrary, TodayConfig } from "./schema";
 import type { Question } from "./schema";
+import { QuestionLibrary, TodayConfig } from "./schema";
 
 /**
  * Load and validate question library

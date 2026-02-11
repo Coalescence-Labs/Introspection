@@ -1,11 +1,11 @@
 "use client";
 
+import { AnimatePresence, motion } from "framer-motion";
+import { ChevronDown } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import type { LLMType } from "@/lib/content/schema";
-import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { ChevronDown } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
 
 const llms = [
   {
@@ -85,10 +85,7 @@ export function LLMSelector({ selected, onSelect }: LLMSelectorProps) {
                 <span className="text-xs text-muted-foreground">{selectedLLM?.description}</span>
               </div>
             </div>
-            <motion.div
-              animate={{ rotate: 0 }}
-              transition={{ duration: 0.2 }}
-            >
+            <motion.div animate={{ rotate: 0 }} transition={{ duration: 0.2 }}>
               <ChevronDown className="h-4 w-4 text-muted-foreground" />
             </motion.div>
           </motion.button>
@@ -122,7 +119,7 @@ export function LLMSelector({ selected, onSelect }: LLMSelectorProps) {
                 // Calculate position relative to center for animation
                 // For 2-col: indices 0,1 -> positions -0.5, 0.5
                 // For 4-col: indices 0,1,2,3 -> positions -1.5, -0.5, 0.5, 1.5
-                const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+                const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
                 const cols = isMobile ? 2 : 4;
                 const centerOffset = (index - (cols - 1) / 2) * 100;
 

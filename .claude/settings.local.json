@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(bun run build:*)",
-      "Bash(bun run pipeline:generate:*)"
+      "Bash(bun run pipeline:generate:*)",
+      "Bash(bun run test)",
+      "Bash(bun run lint:*)"
     ]
   }
 }

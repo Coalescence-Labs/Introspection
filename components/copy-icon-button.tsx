@@ -1,8 +1,8 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect } from "react";
-import { Copy, Check } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Check, Copy } from "lucide-react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface CopyIconButtonProps {
@@ -23,7 +23,7 @@ function CornerSparkle({ corner, delay }: { corner: "top-right" | "bottom-left";
       exit={{ scale: 0, opacity: 0 }}
       transition={{ duration: 0.3, delay }}
     >
-      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
         <motion.path
           d="M6 0L6.5 5.5L6 6L5.5 5.5L6 0Z"
           fill="currentColor"
@@ -68,6 +68,7 @@ export function CopyIconButton({ text, onCopy, className }: CopyIconButtonProps)
   }, [copied]);
 
   // Reset copied state when text changes (different prompt being copied)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: text dependency is intentional
   useEffect(() => {
     setCopied(false);
   }, [text]);
@@ -76,7 +77,7 @@ export function CopyIconButton({ text, onCopy, className }: CopyIconButtonProps)
     e.stopPropagation();
 
     try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
+      if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(text);
         setCopied(true);
         onCopy?.();

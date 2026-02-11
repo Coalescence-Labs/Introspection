@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
 test.describe("Introspection MVP Smoke Tests", () => {
   test("homepage loads and displays today's question", async ({ page }) => {
@@ -10,7 +10,7 @@ test.describe("Introspection MVP Smoke Tests", () => {
     // Check that a question is displayed (should be large text)
     const questionText = await page.locator("h1").textContent();
     expect(questionText).toBeTruthy();
-    expect(questionText!.length).toBeGreaterThan(10);
+    expect(questionText?.length).toBeGreaterThan(10);
 
     // Wait for and check condensed LLM selector is present
     const llmSelector = page.getByText(/Optimize for:/i);
@@ -72,7 +72,9 @@ test.describe("Introspection MVP Smoke Tests", () => {
     await page.goto("/library", { waitUntil: "networkidle" });
 
     // Check header
-    await expect(page.getByRole("heading", { name: /question library/i })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("heading", { name: /question library/i })).toBeVisible({
+      timeout: 10000,
+    });
 
     // Check that categories are visible
     await expect(page.getByRole("button", { name: /all/i })).toBeVisible({ timeout: 10000 });

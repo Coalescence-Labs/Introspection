@@ -1,7 +1,7 @@
 "use client";
 
-import { Switch } from "@/components/ui/switch";
 import { Volume2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 interface SpeechToggleProps {
   enabled: boolean;

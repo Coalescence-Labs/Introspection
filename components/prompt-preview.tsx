@@ -1,9 +1,9 @@
 "use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface PromptPreviewProps {
   title: string;
@@ -43,7 +43,7 @@ export function PromptPreview({ title, fullPrompt }: PromptPreviewProps) {
             transition={{ duration: 0.2 }}
           >
             <CardContent>
-              <pre className="max-h-96 overflow-auto rounded-md bg-muted p-4 text-xs leading-relaxed">
+              <pre className="max-h-96 overflow-auto whitespace-pre-wrap break-words rounded-md bg-muted p-4 text-xs leading-relaxed">
                 {fullPrompt}
               </pre>
             </CardContent>

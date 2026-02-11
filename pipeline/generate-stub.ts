@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
 
 import { questions } from "@/content/questions";
-import type { LLMType } from "@/lib/content/schema";
 import { getTodayQuestion } from "@/lib/content/rotation";
+import type { LLMType } from "@/lib/content/schema";
 import { StubProvider } from "./providers/stub-provider";
 
 /**

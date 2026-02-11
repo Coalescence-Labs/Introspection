@@ -1,5 +1,5 @@
 import { hashString } from "@/lib/utils";
-import type { LLMProvider, GenerateVariantRequest, GenerateVariantResponse } from "./types";
+import type { GenerateVariantRequest, GenerateVariantResponse, LLMProvider } from "./types";
 
 /**
  * Stub provider that returns deterministic content based on hash
