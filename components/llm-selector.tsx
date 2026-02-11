@@ -63,7 +63,7 @@ export function LLMSelector({ selected, onSelect }: LLMSelectorProps) {
   };
 
   return (
-    <div className="relative min-h-[60px]" ref={containerRef}>
+    <div className="relative h-[60px]" ref={containerRef}>
       {/* Condensed View - Selected LLM */}
       {!isExpanded && (
         <div className="flex justify-center">
@@ -103,8 +103,18 @@ export function LLMSelector({ selected, onSelect }: LLMSelectorProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="absolute inset-x-0 top-0 z-10"
+            className="absolute inset-x-0 top-0 z-10 rounded-lg border border-border bg-background p-4 shadow-lg"
           >
+            {/* Section Title */}
+            <motion.div
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 }}
+              className="mb-3 text-center text-xs text-muted-foreground"
+            >
+              Choose export target for optimal prompt
+            </motion.div>
+
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
               {llms.map((llm, index) => {
                 const isSelected = selected === llm.id;
