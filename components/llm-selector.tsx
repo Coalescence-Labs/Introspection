@@ -59,21 +59,19 @@ export function LLMSelector({ selected, onSelect }: LLMSelectorProps) {
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (!isExpanded)
-        return
+      if (!isExpanded) return;
 
-      if (e.key === 'Escape') {
-        setIsExpanded(false)
+      if (e.key === "Escape") {
+        setIsExpanded(false);
       }
-    }
+    };
 
-    window.addEventListener('keydown', handleEscape)
+    window.addEventListener("keydown", handleEscape);
 
     return () => {
-      window.removeEventListener('keydown', handleEscape)
-    }
-
-  }, [])
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [isExpanded]);
 
   const handleSelect = (llm: LLMType) => {
     onSelect(llm);

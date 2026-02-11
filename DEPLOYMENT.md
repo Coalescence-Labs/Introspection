@@ -45,9 +45,18 @@ If you want to customize, create `vercel.json`:
 
 ## Environment Variables
 
-For the MVP, no environment variables are required. The app is fully static.
+For the MVP, no environment variables are required. The app works with local content only.
 
-For future editorial pipeline (Mode B with real LLM API calls), you'll add:
+### Optional: Supabase (server-only, read-only)
+
+When `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` are set, the app loads questions and today config from Supabase. When unset, it uses local `content/*.ts` files. The Supabase client is only used on the server (loader, Server Components).
+
+- `NEXT_PUBLIC_SUPABASE_URL` — Your Supabase project URL
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` — Supabase publishable (anon) key; RLS should allow SELECT only for the app
+
+Add these in Vercel Dashboard → Settings → Environment Variables. See `.env.example` for placeholder names.
+
+### Future: Editorial pipeline (Mode B with real LLM API calls)
 
 ```
 ANTHROPIC_API_KEY=sk-ant-...
@@ -55,8 +64,6 @@ OPENAI_API_KEY=sk-proj-...
 GOOGLE_API_KEY=...
 PERPLEXITY_API_KEY=...
 ```
-
-Add these in Vercel Dashboard → Settings → Environment Variables.
 
 ## Production Checklist
 

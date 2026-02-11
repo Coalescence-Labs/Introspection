@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 
 interface CopyIconButtonProps {
   text: string;
-  onCopy?: () => void
+  onCopy?: () => void;
 }
 
 // Corner sparkle for success animation
@@ -54,7 +54,11 @@ function CornerSparkle({ corner, delay }: { corner: "top-right" | "bottom-left";
   );
 }
 
-export function CopyIconButton({ text, onCopy, className }: React.ComponentProps<'div'> & CopyIconButtonProps) {
+export function CopyIconButton({
+  text,
+  onCopy,
+  className,
+}: React.ComponentProps<"div"> & CopyIconButtonProps) {
   const [copied, setCopied] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
 

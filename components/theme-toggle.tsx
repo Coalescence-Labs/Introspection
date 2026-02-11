@@ -3,7 +3,8 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
-import React, { useEffect, useState } from "react";
+import type React from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 // Custom icon that combines Sun (upper left) and Moon (bottom right) split diagonally
