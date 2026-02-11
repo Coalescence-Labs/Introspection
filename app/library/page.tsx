@@ -55,6 +55,7 @@ export default function LibraryPage() {
         <Link
           href="/"
           className="mb-8 inline-block text-sm text-muted-foreground transition-colors hover:text-foreground"
+          tabIndex={0}
         >
           ← Back to today
         </Link>
@@ -71,10 +72,11 @@ export default function LibraryPage() {
             : "bg-secondary text-secondary-foreground hover:bg-accent/10"
             }`}
           type="button"
+          tabIndex={0}
         >
           All
         </button>
-        {categories.map((category) => (
+        {categories.map((category, index) => (
           <button
             key={category}
             onClick={() => setSelectedCategory(category)}
@@ -83,6 +85,7 @@ export default function LibraryPage() {
               : "bg-secondary text-secondary-foreground hover:bg-accent/10"
               }`}
             type="button"
+            tabIndex={0}
           >
             {categoryLabels[category]}
           </button>
@@ -91,7 +94,7 @@ export default function LibraryPage() {
 
       {/* Questions by Category */}
       <div className="space-y-16">
-        {categories.map((category) => {
+        {categories.map((category, categoryIndex) => {
           const categoryQuestions = questionsByCategory[category];
           if (categoryQuestions.length === 0) return null;
 
@@ -104,7 +107,7 @@ export default function LibraryPage() {
             >
               <h2 className="mb-6 text-2xl font-semibold">{categoryLabels[category]}</h2>
               <div className="space-y-3">
-                {categoryQuestions.map((question) => {
+                {categoryQuestions.map((question, questionIndex) => {
                   const isHovered = hoveredCard === question.id;
                   const prompt = generatePrompt(question, {
                     llm: selectedLLM,
@@ -118,6 +121,7 @@ export default function LibraryPage() {
                       transition={{ duration: 0.2 }}
                       onMouseEnter={() => setHoveredCard(question.id)}
                       onMouseLeave={() => setHoveredCard(null)}
+                      onFocus={() => setHoveredCard(question.id)}
                     >
                       <Card className="group relative cursor-pointer border-l-4 border-l-accent/50 transition-all hover:border-l-accent hover:shadow-md">
                         <CardHeader className="pb-3">
@@ -147,7 +151,7 @@ export default function LibraryPage() {
                               }}
                               transition={{ duration: 0.2 }}
                             >
-                              <CopyIconButton text={prompt.fullPrompt} />
+                              <CopyIconButton text={prompt.fullPrompt} tabIndex={0} />
                             </motion.div>
                           </div>
                         </CardHeader>

@@ -20,7 +20,7 @@ export function PromptPreview({ fullPrompt }: PromptPreviewProps) {
           onClick={() => setIsOpen(!isOpen)}
           className="flex w-full items-center justify-between text-left transition-colors hover:text-accent"
           type="button"
-          tabIndex={5}
+          tabIndex={0}
         >
           <div className="space-y-1">
             <CardTitle className="text-base">Prompt Preview</CardTitle>

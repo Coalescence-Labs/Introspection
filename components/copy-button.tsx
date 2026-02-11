@@ -129,7 +129,7 @@ export function CopyButton({ text, onCopy }: CopyButtonProps) {
           size="xl"
           onClick={handleCopy}
           className="relative w-[280px] overflow-visible cursor-pointer"
-          tabIndex={4}
+          tabIndex={0}
         >
           <AnimatePresence mode="wait">
             {copied ? (

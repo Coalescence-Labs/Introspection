@@ -95,7 +95,7 @@ export function LLMSelector({ selected, onSelect }: LLMSelectorProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1, transition: { delay: 0.28 } }}
             exit={{ opacity: 0 }}
-            tabIndex={1}
+            tabIndex={0}
           >
             <div className="flex items-center gap-3">
               <span className="text-xs text-muted-foreground">Optimize for:</span>

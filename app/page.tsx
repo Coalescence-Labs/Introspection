@@ -109,7 +109,7 @@ export default function TodayPage() {
           <Link
             href="/library"
             className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-            tabIndex={20}
+            tabIndex={0}
           >
             Browse all questions →
           </Link>
@@ -150,7 +150,7 @@ export default function TodayPage() {
       {/* Footer */}
       <footer className="pb-16 text-center text-xs text-muted-foreground">
         <div className="mb-4 flex justify-center">
-          <ThemeToggle tabIndex={10} />
+          <ThemeToggle tabIndex={0} />
         </div>
         <p>Introspection - Reflect on your AI conversations</p>
       </footer>
