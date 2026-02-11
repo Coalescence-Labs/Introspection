@@ -52,15 +52,12 @@ export default function LibraryPage() {
     <main className="mx-auto min-h-screen max-w-4xl px-6 py-24 sm:py-32">
       {/* Header */}
       <div className="mb-12">
-        <div className="mb-8 flex items-center justify-between">
-          <Link
-            href="/"
-            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-          >
-            ← Back to today
-          </Link>
-          <ThemeToggle />
-        </div>
+        <Link
+          href="/"
+          className="mb-8 inline-block text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          ← Back to today
+        </Link>
         <h1 className="text-4xl font-bold">Question Library</h1>
         <p className="mt-2 text-muted-foreground">Browse all introspection questions by category</p>
       </div>
@@ -168,6 +165,9 @@ export default function LibraryPage() {
 
       {/* Footer */}
       <footer className="mt-20 text-center text-xs text-muted-foreground">
+        <div className="mb-4 flex justify-center">
+          <ThemeToggle />
+        </div>
         <p>{questions.length} questions available</p>
       </footer>
     </main>

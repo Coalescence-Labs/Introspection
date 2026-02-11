@@ -10,7 +10,7 @@ interface PromptPreviewProps {
   fullPrompt: string;
 }
 
-export function PromptPreview({ title, fullPrompt }: PromptPreviewProps) {
+export function PromptPreview({ fullPrompt }: PromptPreviewProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (

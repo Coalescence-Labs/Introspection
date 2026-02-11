@@ -111,10 +111,7 @@ export default function TodayPage() {
           >
             Browse all questions →
           </Link>
-          <div className="flex items-center gap-4">
-            <div className="text-xs text-muted-foreground">Daily Question • {getTodayString()}</div>
-            <ThemeToggle />
-          </div>
+          <div className="text-xs text-muted-foreground">Daily Question • {getTodayString()}</div>
         </div>
 
         {/* Hero Question */}
@@ -151,6 +148,9 @@ export default function TodayPage() {
 
       {/* Footer */}
       <footer className="pb-16 text-center text-xs text-muted-foreground">
+        <div className="mb-4 flex justify-center">
+          <ThemeToggle />
+        </div>
         <p>Introspection - Reflect on your AI conversations</p>
       </footer>
     </main>
