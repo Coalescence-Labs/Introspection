@@ -57,6 +57,24 @@ export function LLMSelector({ selected, onSelect }: LLMSelectorProps) {
     };
   }, [isExpanded]);
 
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (!isExpanded)
+        return
+
+      if (e.key === 'Escape') {
+        setIsExpanded(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleEscape)
+
+    return () => {
+      window.removeEventListener('keydown', handleEscape)
+    }
+
+  }, [])
+
   const handleSelect = (llm: LLMType) => {
     onSelect(llm);
     setIsExpanded(false);
@@ -69,14 +87,15 @@ export function LLMSelector({ selected, onSelect }: LLMSelectorProps) {
         <div className="flex justify-center">
           <motion.button
             onClick={() => setIsExpanded(true)}
-            className="flex w-auto items-center justify-between gap-3 rounded-lg border border-border bg-background px-4 py-3 shadow-sm transition-colors hover:border-accent/30 hover:shadow-md"
+            className="flex w-auto items-center justify-between gap-3 rounded-lg border border-border bg-background px-4 py-3 shadow-sm transition-colors hover:border-accent/30 hover:shadow-md cursor-pointer"
             whileHover={{ y: -1 }}
             whileTap={{ scale: 0.99 }}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
             type="button"
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1, transition: { delay: 0.4 } }}
+            animate={{ opacity: 1, transition: { delay: 0.28 } }}
             exit={{ opacity: 0 }}
+            tabIndex={1}
           >
             <div className="flex items-center gap-3">
               <span className="text-xs text-muted-foreground">Optimize for:</span>

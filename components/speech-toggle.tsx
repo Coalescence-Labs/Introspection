@@ -16,6 +16,7 @@ export function SpeechToggle({ enabled, onToggle }: SpeechToggleProps) {
         checked={enabled}
         onCheckedChange={onToggle}
         aria-label="Include speech-friendly version for TTS"
+        tabIndex={2}
       />
       <label
         htmlFor="speech-friendly"

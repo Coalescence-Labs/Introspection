@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 // Custom icon that combines Sun (upper left) and Moon (bottom right) split diagonally
@@ -56,7 +56,7 @@ function SunMoon({ className }: { className?: string }) {
   );
 }
 
-export function ThemeToggle({ className }: { className?: string }) {
+export function ThemeToggle({ className, ...props }: React.ComponentProps<typeof motion.button>) {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -95,7 +95,7 @@ export function ThemeToggle({ className }: { className?: string }) {
     <motion.button
       onClick={cycleTheme}
       className={cn(
-        "relative flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background transition-colors hover:border-accent hover:bg-accent/10",
+        "relative flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background transition-colors hover:border-accent hover:bg-accent/10 cursor-pointer",
         className
       )}
       whileHover={{ scale: 1.05 }}
@@ -103,6 +103,7 @@ export function ThemeToggle({ className }: { className?: string }) {
       transition={{ type: "spring", stiffness: 400, damping: 17 }}
       title={`Theme: ${theme}`}
       type="button"
+      {...props}
     >
       <AnimatePresence mode="wait">
         {iconKey === "dark" && (

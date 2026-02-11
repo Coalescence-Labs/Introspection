@@ -49,7 +49,7 @@ export default function LibraryPage() {
   );
 
   return (
-    <main className="mx-auto min-h-screen max-w-4xl px-6 py-24 sm:py-32">
+    <main className="mx-auto min-h-screen max-w-4xl px-6 py-16 sm:py-20">
       {/* Header */}
       <div className="mb-12">
         <Link
@@ -59,18 +59,17 @@ export default function LibraryPage() {
           ← Back to today
         </Link>
         <h1 className="text-4xl font-bold">Question Library</h1>
-        <p className="mt-2 text-muted-foreground">Browse all introspection questions by category</p>
+        <p className="mt-2 text-muted-foreground select-none">Browse all introspection questions by category</p>
       </div>
 
       {/* Category Filters */}
       <div className="mb-12 flex flex-wrap gap-2">
         <button
           onClick={() => setSelectedCategory("all")}
-          className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-            selectedCategory === "all"
-              ? "bg-accent text-accent-foreground"
-              : "bg-secondary text-secondary-foreground hover:bg-accent/10"
-          }`}
+          className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${selectedCategory === "all"
+            ? "bg-accent text-accent-foreground"
+            : "bg-secondary text-secondary-foreground hover:bg-accent/10"
+            }`}
           type="button"
         >
           All
@@ -79,11 +78,10 @@ export default function LibraryPage() {
           <button
             key={category}
             onClick={() => setSelectedCategory(category)}
-            className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-              selectedCategory === category
-                ? "bg-accent text-accent-foreground"
-                : "bg-secondary text-secondary-foreground hover:bg-accent/10"
-            }`}
+            className={`rounded-full px-4 py-2 cursor-pointer text-sm font-medium transition-colors ${selectedCategory === category
+              ? "bg-accent text-accent-foreground"
+              : "bg-secondary text-secondary-foreground hover:bg-accent/10"
+              }`}
             type="button"
           >
             {categoryLabels[category]}
@@ -131,7 +129,7 @@ export default function LibraryPage() {
                                   {question.tags.map((tag) => (
                                     <span
                                       key={tag}
-                                      className="rounded-full bg-muted px-2 py-0.5 text-xs"
+                                      className="rounded-full bg-muted px-2 py-0.5 text-xs select-none"
                                     >
                                       {tag}
                                     </span>
