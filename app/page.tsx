@@ -105,13 +105,13 @@ export default function TodayPage() {
       <div className="flex min-h-screen flex-col py-16 sm:py-20">
         {/* Header */}
         <div className="mb-16 sm:mb-20 flex items-center justify-between">
+          <div className="text-xs text-muted-foreground">Daily Question • {getTodayString()}</div>
           <Link
             href="/library"
             className="text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
             Browse all questions →
           </Link>
-          <div className="text-xs text-muted-foreground">Daily Question • {getTodayString()}</div>
         </div>
 
         {/* Hero Question */}
