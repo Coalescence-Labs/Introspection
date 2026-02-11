@@ -1,4 +1,4 @@
-'use server'
+"use server";
 
 import { getSupabase } from "@/lib/supabase/server";
 import { mapQuestionsWithVariants } from "./map-supabase";
@@ -23,7 +23,7 @@ async function loadQuestionsFromLocal(): Promise<Question[]> {
 
 async function loadTodayConfigFromLocal(): Promise<string | null> {
   try {
-  const config = await import("@/content/today");
+    const config = await import("@/content/today");
     const validated = TodayConfig.parse(config.default);
     return validated.todayQuestionId;
   } catch {
