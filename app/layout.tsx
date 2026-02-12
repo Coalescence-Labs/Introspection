@@ -23,6 +23,8 @@ const commissioner = Commissioner({
   subsets: ["latin"],
   variable: "--font-commissioner",
   display: "swap",
+  preload: true,
+  fallback: ["system-ui", "sans-serif"],
 });
 
 export const metadata: Metadata = {
@@ -37,7 +39,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className="snap-y snap-proximity scroll-smooth" suppressHydrationWarning>
       <body className={`${satoshi.variable} ${commissioner.variable}`}>
         <ThemeProvider
           attribute="class"

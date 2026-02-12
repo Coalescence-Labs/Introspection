@@ -45,7 +45,6 @@
 :root {
   --radius: 0.625rem;
   --font-satoshi: "Satoshi Variable", ui-sans-serif, system-ui, sans-serif;
-  --font-commissioner: var(--font-commissioner), ui-sans-serif, system-ui, sans-serif;
 
   --background: oklch(1 0 0);
   --foreground: oklch(0.22 0.012 70); /* #2D2B26 - warm brown-gray */
@@ -66,6 +65,7 @@
   --muted-foreground: oklch(0.44 0.006 200); /* #5C5E5E - cool neutral gray */
 
   --accent: oklch(0.573 0.1049 174.44); /* #128C74 - teal/green */
+  --accent-glow: oklch(0.573 0.1049 174.44 / 0.45);
   --accent-foreground: oklch(0.985 0 0);
 
   --destructive: oklch(0.577 0.245 27.325);
@@ -101,6 +101,7 @@
   --muted-foreground: oklch(0.68 0.006 200); /* #A0A2A2 */
 
   --accent: oklch(0.573 0.1049 174.44);
+  --accent-glow: oklch(0.573 0.1049 174.44 / 0.45);
   --accent-foreground: oklch(0.96 0.003 145);
 
   --destructive: oklch(0.704 0.191 22.216);
@@ -161,12 +162,18 @@
   h5,
   h6 {
     @apply cursor-default select-none;
-    font-family: var(--font-satoshi);
+    font-family: var(--font-commissioner);
   }
 
   .font-serif {
-    font-family: var(--font-commissioner);
+    font-family: var(--font-commissioner), "Commissioner", ui-serif, Georgia, serif;
   }
+}
+
+/* Subtle glow behind question hero - drop-shadow can't be clipped */
+.question-hero {
+  filter: drop-shadow(0 0 20px oklch(0.573 0.1049 174.44 / 0.18))
+    drop-shadow(0 0 40px oklch(0.573 0.1049 174.44 / 0.08));
 }
 
 /* Mobile safe area support */
