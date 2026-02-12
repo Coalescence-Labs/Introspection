@@ -46,7 +46,7 @@ export function LibraryPageClient({ questions }: LibraryPageClientProps) {
     <main className="mx-auto min-h-screen max-w-4xl px-6 py-16 sm:py-20">
       <div className="mb-12">
         <Link
-          href="/"
+          href="/today"
           className="mb-8 inline-block text-sm text-muted-foreground transition-colors hover:text-foreground"
           tabIndex={0}
         >

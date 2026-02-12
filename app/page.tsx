@@ -1,17 +1,11 @@
-import { TodayPageClient } from "@/components/today-page-client";
-import { loadQuestions, loadTodayConfig } from "@/lib/content/loader";
-import { getTodayQuestion } from "@/lib/content/rotation";
-import { getTodayString } from "@/lib/utils";
+import { ParticleField } from "@/components/ParticleField";
+import { WelcomeContent } from "@/components/WelcomeContent";
 
-export default async function TodayPage() {
-  const questions = await loadQuestions();
-  const todayConfig = await loadTodayConfig();
-
-  const todayQuestion = todayConfig
-    ? (questions.find((q) => q.id === todayConfig) ?? getTodayQuestion(questions))
-    : getTodayQuestion(questions);
-
-  const todayLabel = getTodayString();
-
-  return <TodayPageClient initialQuestion={todayQuestion} todayLabel={todayLabel} />;
+export default function WelcomePage() {
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-[#0E0F11]">
+      <ParticleField />
+      <WelcomeContent />
+    </div>
+  );
 }
