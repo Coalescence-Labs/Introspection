@@ -3,7 +3,7 @@ import { WelcomeContent } from "@/components/WelcomeContent";
 
 export default function WelcomePage() {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#0E0F11]">
+    <div className="relative min-h-screen overflow-hidden bg-background">
       <ParticleField />
       <WelcomeContent />
     </div>
