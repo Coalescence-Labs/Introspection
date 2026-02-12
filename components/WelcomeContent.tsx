@@ -119,9 +119,7 @@ export function WelcomeContent() {
           <p className="mb-4 text-xl font-normal leading-relaxed text-foreground/80">
             You've already done the thinking.
           </p>
-          <p className="text-xl font-normal leading-relaxed text-foreground/80">
-            Now see it.
-          </p>
+          <p className="text-xl font-normal leading-relaxed text-foreground/80">Now see it.</p>
         </div>
       </div>
       <div className="snap-start flex flex-col items-center justify-center relative h-dvh px-6">
