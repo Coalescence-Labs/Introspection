@@ -11,9 +11,9 @@ type ParticleFieldProps = {
 };
 
 export function ParticleField({
-  count = 35_000,
+  count = 42_000,
   pointSize = 0.012,
-  cloudWidth = 9,
+  cloudWidth = 11,
   cloudHeight = 7
 }: ParticleFieldProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -119,6 +119,25 @@ export function ParticleField({
     handleResize();
     window.addEventListener("resize", handleResize);
 
+    // Mouse position in world space (XY plane at z=0)
+    const mouseWorld = new THREE.Vector2(0, 0);
+    const raycaster = new THREE.Raycaster();
+    const mouseNDC = new THREE.Vector2(0, 0);
+    const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+    const intersect = new THREE.Vector3();
+
+    const onPointerMove = (e: PointerEvent) => {
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouseNDC.x = (e.clientX - rect.left) / rect.width * 2 - 1;
+      mouseNDC.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(mouseNDC, camera);
+      raycaster.ray.intersectPlane(plane, intersect);
+      mouseWorld.x = intersect.x;
+      mouseWorld.y = intersect.y;
+    };
+
+    window.addEventListener("pointermove", onPointerMove);
+
     const clock = new THREE.Clock();
     let running = true;
 
@@ -126,6 +145,8 @@ export function ParticleField({
     const damping = 0.975;
     const containmentStrength = 0.15;
     const springStrength = 0.4;
+    const mouseStrength = 0.025;
+    const mouseRadius = 12;
 
     const tick = () => {
       if (!running) return;
@@ -158,6 +179,17 @@ export function ParticleField({
 
         vx += (Math.random() - 0.5) * 0.012 * dt;
         vy += (Math.random() - 0.5) * 0.012 * dt;
+
+        // Mouse attraction: particles drift toward cursor like magnetic dust
+        const dx = mouseWorld.x - px;
+        const dy = mouseWorld.y - py;
+        const distSq = dx * dx + dy * dy + 0.5;
+        const dist = Math.sqrt(distSq);
+        if (dist > 0.1 && dist < mouseRadius) {
+          const f = (mouseStrength * dt) / (dist + 0.5);
+          vx += (dx / dist) * f;
+          vy += (dy / dist) * f;
+        }
 
         if (Math.abs(pz) > 5) {
           vz -= (pz / (Math.abs(pz) + 0.1)) * 0.1 * dt;
@@ -200,6 +232,7 @@ export function ParticleField({
       running = false;
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", handleResize);
+      window.removeEventListener("pointermove", onPointerMove);
 
       scene.remove(points);
 

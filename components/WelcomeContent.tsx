@@ -6,7 +6,7 @@ import Link from "next/link";
 export function WelcomeContent() {
   return (
     <main className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 pt-20 pb-16 sm:pt-32 sm:pb-24">
-      <div className="mx-auto flex w-full max-w-[900px] flex-col items-center text-center">
+      <div className="mx-auto flex w-full max-w-[900px] flex-col items-center text-center select-none">
         <motion.span
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -31,8 +31,8 @@ export function WelcomeContent() {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="mb-10 max-w-2xl text-lg font-medium leading-relaxed text-[#EDEDED]/80 sm:text-xl"
         >
-          Curated introspection questions, optimized for every LLM. Copy, paste, discover
-          patterns you&apos;d never notice on your own.
+          Questions designed to surface what's hidden in your past conversations. <br />
+          Works with any LLM — just copy, paste, and look closer.
         </motion.p>
 
         <motion.div
@@ -42,6 +42,7 @@ export function WelcomeContent() {
         >
           <Link
             href="/today"
+            tabIndex={0}
             className="inline-flex h-12 min-w-[200px] items-center justify-center rounded-md bg-accent px-10 py-5 text-base font-semibold text-accent-foreground shadow-sm transition-all duration-[250ms] hover:scale-[1.02] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-[#0E0F11] sm:text-lg"
             prefetch={true}
           >
