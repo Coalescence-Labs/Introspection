@@ -36,10 +36,13 @@ export type PromptVariant = z.infer<typeof PromptVariant>;
 /**
  * Question schema - supports both Mode A (template-driven) and Mode B (editorial variants)
  */
+/** Max length for question text (simple_text). */
+export const SIMPLE_TEXT_MAX_LENGTH = 120;
+
 export const Question = z.object({
   id: z.string(),
   category: QuestionCategory,
-  simple_text: z.string(),
+  simple_text: z.string().max(SIMPLE_TEXT_MAX_LENGTH),
   tags: z.array(z.string()).optional(),
   cadence: Cadence.optional(),
   variants: z
@@ -73,7 +76,7 @@ export type TodayConfig = z.infer<typeof TodayConfig>;
 export const QuestionRow = z.object({
   id: z.string(),
   category: z.string(),
-  simple_text: z.string(),
+  simple_text: z.string().max(SIMPLE_TEXT_MAX_LENGTH),
   tags: z.array(z.string()).nullable(),
   cadence: z.string().nullable(),
 });

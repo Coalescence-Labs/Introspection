@@ -9,7 +9,7 @@ async function main() {
 
 
   const targetDate = getCurrentDateString();
-  const modelId: GatewayModelId = "openai/gpt-5.2";
+  const modelId: GatewayModelId = "openai/gpt-5.2-chat";
   
   /**
    * 3. Gather recent daily questions from supabase

@@ -68,7 +68,7 @@ export function TodayPageClient({ initialQuestion, todayLabel }: TodayPageClient
   }, [selectedLLM, generatedPrompt]);
 
   return (
-    <main className="mx-auto max-w-4xl px-6">
+    <main className="mx-auto max-w-5xl px-6">
       <div className="flex min-h-screen flex-col py-16 sm:py-20">
         {/* Header */}
         <div className="mb-16 sm:mb-20 flex items-center justify-between">

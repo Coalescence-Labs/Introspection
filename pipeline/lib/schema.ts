@@ -11,6 +11,13 @@ export const LLMGeneratedDailyQuestion = Question.omit({
 
 export type LLMGeneratedDailyQuestion = z.infer<typeof LLMGeneratedDailyQuestion>;
 
+/** Schema for LLM output that returns multiple questions in one call */
+export const LLMGeneratedDailyQuestionArray = z.object({
+  questions: z.array(LLMGeneratedDailyQuestion),
+});
+
+export type LLMGeneratedDailyQuestionArray = z.infer<typeof LLMGeneratedDailyQuestionArray>;
+
 export const GenerationRunsRow = z.object({
   id: z.uuidv7(),
   run_date: z.date(),

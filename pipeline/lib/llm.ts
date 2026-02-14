@@ -1,6 +1,6 @@
 import { GatewayModelId, generateText, Output, NoObjectGeneratedError } from "ai";
-import { LLMGeneratedDailyQuestion } from "./schema";
-import { DAILY_GENERATOR_PROMPT } from "./prompt";
+import { LLMGeneratedDailyQuestion, LLMGeneratedDailyQuestionArray } from "./schema";
+import { DAILY_GENERATOR_PROMPT, EXPANSIVE_GENERATOR_PROMPT } from "./prompt";
 
 const DEFAULT_MODEL: GatewayModelId = "openai/gpt-5.2"
 
@@ -167,18 +167,137 @@ export async function generateDailyQuestion(input: GenerateDailyQuestionInput): 
       type: "internal_error",
     },
     runId: input.runId,
-  }
+  };
+}
 
+// ---------------------------------------------------------------------------
+// Batch generation (array of questions in one call)
+// ---------------------------------------------------------------------------
+
+export interface GenerateQuestionsInput {
+  model?: GatewayModelId;
+  runId?: string;
+  context?: string;
+  /** Number of questions to generate (default 5) */
+  count?: number;
+}
+
+export type GenerateQuestionsOutput =
+  | {
+      ok: true;
+      data: LLMGeneratedDailyQuestion[];
+      rawText?: string;
+      modelId?: GatewayModelId;
+      performanceMetrics?: PerformanceMetrics;
+      usage?: UsageMetrics;
+      runId?: string;
+    }
+  | {
+      ok: false;
+      data: null;
+      rawText?: string;
+      modelId?: GatewayModelId;
+      performanceMetrics?: PerformanceMetrics;
+      usage?: UsageMetrics;
+      error: {
+        message: string;
+        type: ErrorType;
+        code?: number;
+        param?: string;
+        value?: string;
+        raw_error?: unknown;
+      };
+      runId?: string;
+    };
+
+export async function generateQuestions(
+  input: GenerateQuestionsInput
+): Promise<GenerateQuestionsOutput> {
+  const startTime = performance.now();
+  const count = Math.min(Math.max(1, input.count ?? 5), 20);
+  const modelId = input.model ?? DEFAULT_MODEL;
+
+  const startPromptGeneration = performance.now();
+  const userPrompt = buildUserPromptForBatch(count, input.context);
+  const endPromptGeneration = performance.now();
+  const promptGenerationLatencyMs = endPromptGeneration - startPromptGeneration;
+
+  try {
+    const startLLMCall = performance.now();
+    const llmResponse = await generateText({
+      model: modelId,
+      system: EXPANSIVE_GENERATOR_PROMPT,
+      prompt: userPrompt,
+      maxOutputTokens: 4000,
+      output: Output.object({ schema: LLMGeneratedDailyQuestionArray }),
+      temperature: 0.9,
+      presencePenalty: 0.6,
+    });
+    const endLLMCall = performance.now();
+    const latencyMs = endLLMCall - startLLMCall;
+    const usage = llmResponse.totalUsage;
+
+    return {
+      ok: true,
+      data: llmResponse.output.questions,
+      rawText: llmResponse.text,
+      usage: {
+        completionTokens: usage.outputTokens,
+        promptTokens: usage.inputTokens,
+        totalTokens: usage.totalTokens,
+      },
+      modelId,
+      performanceMetrics: {
+        promptGenerationLatencyMs,
+        latencyMs,
+      },
+      runId: input.runId,
+    };
+  } catch (err) {
+    console.error("Failed to generate questions", JSON.stringify(err, null, 2));
+    if (NoObjectGeneratedError.isInstance(err)) {
+      return {
+        ok: false,
+        data: null,
+        error: {
+          message: "Failed to generate questions",
+          type: "model_error",
+          raw_error: err,
+        },
+        runId: input.runId,
+      };
+    }
+    return {
+      ok: false,
+      data: null,
+      error: {
+        message: "Failed to generate questions",
+        type: "model_error",
+      },
+      runId: input.runId,
+    };
+  }
 }
 
 /**
  * TODO: Add in further dynamic context on recent daily questions
- * 
+ *
  */
 function buildUserPrompt(context?: string): string {
   let prompt = `Draft 3 candidates internally, pick the best, output only final JSON.`;
   if (context) {
     prompt += `\nContext: \n${context}`;
+  }
+  return prompt;
+}
+
+/**
+ * Prompt for generating multiple questions in one call. Output must be JSON with a "questions" array.
+ */
+function buildUserPromptForBatch(count: number, context?: string): string {
+  let prompt = `Generate exactly ${count} distinct questions. Output only valid JSON with a single key "questions" whose value is an array of ${count} objects. Each object must match the schema (category, simple_text). Ensure variety: different angles, categories, and phrasing. Do not duplicate or lightly rephrase.`;
+  if (context) {
+    prompt += `\nContext:\n${context}`;
   }
   return prompt;
 }

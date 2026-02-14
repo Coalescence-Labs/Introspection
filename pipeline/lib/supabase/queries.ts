@@ -97,6 +97,32 @@ export async function recordRunResult({ date, status, model, runId, notes }: Rec
   }
 }
 
+/**
+ * Fetches questions from the library (questions table) for context when generating new ones.
+ */
+export async function getLibraryQuestions({ limit = 50 }: { limit?: number }): Promise<QuestionRow[]> {
+  try {
+    const { data, error } = await supabaseWorker
+      .from("questions")
+      .select("id, category, simple_text, tags, cadence")
+      .order("id", { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      throw error;
+    }
+
+    if (!data?.length) {
+      return [];
+    }
+
+    return QuestionRow.array().parse(data);
+  } catch (error) {
+    console.error("Failed to get library questions:", error);
+    throw error;
+  }
+}
+
 export async function getRecentDailyQuestions({ limit }: { limit?: number }): Promise<QuestionFeaturedHistory[]> {
   try {
     const { data, error } = 
@@ -167,6 +193,40 @@ export async function insertGeneratedQuestion({ question }: { question: Omit<Que
 
   } catch (error) {
     console.error("Failed to insert generated question:", error);
+    throw error;
+  }
+}
+
+/**
+ * Inserts multiple questions in a single Supabase request.
+ * @returns Array of inserted question IDs (same order as input).
+ */
+export async function insertGeneratedQuestions({
+  questions,
+}: {
+  questions: Omit<QuestionRow, "id">[];
+}): Promise<string[]> {
+  if (questions.length === 0) {
+    return [];
+  }
+  const rows = questions.map((q) => ({
+    id: crypto.randomUUID(),
+    category: q.category,
+    simple_text: q.simple_text,
+    tags: q.tags ?? null,
+    cadence: q.cadence ?? null,
+  }));
+  const ids = rows.map((r) => r.id);
+  try {
+    const { error } = await supabaseWorker.from("questions").insert(rows);
+
+    if (error) {
+      throw error;
+    }
+
+    return ids;
+  } catch (error) {
+    console.error("Failed to insert generated questions:", error);
     throw error;
   }
 }
