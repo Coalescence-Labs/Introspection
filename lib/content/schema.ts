@@ -39,7 +39,7 @@ export type PromptVariant = z.infer<typeof PromptVariant>;
 export const Question = z.object({
   id: z.string(),
   category: QuestionCategory,
-  simpleText: z.string(),
+  simple_text: z.string(),
   tags: z.array(z.string()).optional(),
   cadence: Cadence.optional(),
   variants: z
@@ -116,3 +116,11 @@ export const MappedQuestion = z.object({
     .optional(),
 });
 export type MappedQuestion = z.infer<typeof MappedQuestion>;
+
+
+export const QuestionFeaturedHistory = z.object({
+  questionId: z.string(),
+  featuredDate: z.string(),
+  question: Question,
+});
+export type QuestionFeaturedHistory = z.infer<typeof QuestionFeaturedHistory>;

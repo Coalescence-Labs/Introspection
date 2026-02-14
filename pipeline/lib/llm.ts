@@ -9,6 +9,7 @@ interface GenerateDailyQuestionInput {
   model?: GatewayModelId;
   runId?: string;
   attempt?: number;
+  context?: string;
 }
 
 type ErrorType = "invalid_input" | "model_error" | "rate_limit_exceeded" | "internal_error" | "unknown";
@@ -26,7 +27,7 @@ type UsageMetrics = {
   cost?: number;
 }
 
-type GenerateDailyQuestionOutput =
+export type GenerateDailyQuestionOutput =
   | {
       ok: true;
       data: LLMGeneratedDailyQuestion;
@@ -86,7 +87,7 @@ export async function generateDailyQuestion(input: GenerateDailyQuestionInput): 
   const inputValidationLatencyMs = endInputValidation - startTime;
 
   const startPromptGeneration = performance.now();
-  const userPrompt = buildUserPrompt();
+  const userPrompt = buildUserPrompt(input.context);
   const endPromptGeneration = performance.now();
 
   const promptGenerationLatencyMs = endPromptGeneration - startPromptGeneration;
@@ -173,17 +174,21 @@ export async function generateDailyQuestion(input: GenerateDailyQuestionInput): 
  * TODO: Add in further dynamic context on recent daily questions
  * 
  */
-function buildUserPrompt(): string {
-  return `Draft 3 candidates internally, pick the best, output only final JSON.`
+function buildUserPrompt(context?: string): string {
+  let prompt = `Draft 3 candidates internally, pick the best, output only final JSON.`;
+  if (context) {
+    prompt += `\nContext: \n${context}`;
+  }
+  return prompt;
 }
 
 // Helper functions, TODO: Move to utils
-function getCurrentDateString(): string {
+export function getCurrentDateString(): string {
   const today = new Date();
   return today.toISOString().slice(0, 10); // "YYYY-MM-DD"
 }
 
-function validateDateString(dateString: string): boolean {
+export function validateDateString(dateString: string): boolean {
   // Verify it is in proper structure YYYY-MM-DD
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateString)) return false;
   
