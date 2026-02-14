@@ -176,7 +176,7 @@ Edit `/content/questions.ts`:
 {
   id: "unique-id",
   category: "career", // career | ideas | learning | patterns | productivity | reflection
-  simpleText: "Your question here?",
+  simple_text: "Your question here?",
   tags: ["tag1", "tag2"],
   cadence: "weekly", // daily | weekly | monthly
 }
@@ -205,7 +205,7 @@ const config: TodayConfig = {
 {
   id: "career-001",
   category: "career",
-  simpleText: "What can I do to make the next step in my career?",
+  simple_text: "What can I do to make the next step in my career?",
   variants: {
     claude: {
       title: "Career Growth Analysis",

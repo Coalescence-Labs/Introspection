@@ -103,7 +103,7 @@ export type TodayConfigSelect = z.infer<typeof TodayConfigSelect>;
 export const MappedQuestion = z.object({
   id: z.string(),
   category: z.string(),
-  simpleText: z.string(),
+  simple_text: z.string(),
   tags: z.array(z.string()).optional(),
   cadence: z.string().optional(),
   variants: z

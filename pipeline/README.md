@@ -107,7 +107,7 @@ Generated variants can be stored in two ways:
 {
   id: "career-001",
   category: "career",
-  simpleText: "What can I specifically do to make the next step in my career?",
+  simple_text: "What can I specifically do to make the next step in my career?",
   variants: {
     claude: {
       title: "Career Growth Introspection",

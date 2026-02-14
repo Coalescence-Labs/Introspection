@@ -4,6 +4,9 @@ import z from "zod";
 
 export const LLMGeneratedDailyQuestion = Question.omit({
   id: true,
+  variants: true,
+  tags: true,
+  cadence: true,
 })
 
 export type LLMGeneratedDailyQuestion = z.infer<typeof LLMGeneratedDailyQuestion>;

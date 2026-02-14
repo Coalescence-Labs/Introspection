@@ -33,7 +33,7 @@ async function main() {
     questions.map((q) => ({
       id: q.id,
       category: q.category,
-      simple_text: q.simpleText,
+      simple_text: q.simple_text,
       tags: q.tags ?? null,
       cadence: q.cadence ?? null,
     }))

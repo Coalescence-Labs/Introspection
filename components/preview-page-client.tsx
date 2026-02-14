@@ -72,7 +72,7 @@ export function PreviewPageClient({ initialQuestion, todayLabel }: PreviewPageCl
           <CardTitle>Question</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-2xl font-semibold">{question.simpleText}</p>
+          <p className="text-2xl font-semibold">{question.simple_text}</p>
           <div className="mt-4 flex gap-2">
             <span className="rounded-full bg-muted px-3 py-1 text-xs">
               Category: {question.category}

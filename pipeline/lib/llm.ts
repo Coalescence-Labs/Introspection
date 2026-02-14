@@ -79,8 +79,6 @@ export async function generateDailyQuestion(input: GenerateDailyQuestionInput): 
     date = getCurrentDateString();
   }
   
-  const runId = input.runId || `run-${date}-${input.attempt || 0}`;
-  
   const modelId = input.model || DEFAULT_MODEL;
 
   const endInputValidation = performance.now();
@@ -100,6 +98,8 @@ export async function generateDailyQuestion(input: GenerateDailyQuestionInput): 
       prompt: userPrompt,
       maxOutputTokens: 1200,
       output: Output.object({ schema: LLMGeneratedDailyQuestion }),
+      temperature: 0.9,
+      presencePenalty: 0.6
     });
     const endLLMCall = performance.now();
 
@@ -123,11 +123,12 @@ export async function generateDailyQuestion(input: GenerateDailyQuestionInput): 
         promptGenerationLatencyMs,
         latencyMs,
       },
-      runId: runId,
+      runId: input.runId,
     }
 
 
   } catch (err) {
+    console.error("Failed to generate daily question", JSON.stringify(err, null, 2));
     if (NoObjectGeneratedError.isInstance(err)) {
       console.log('NoObjectGeneratedError');
       console.log('Cause:', err.cause);
@@ -143,7 +144,7 @@ export async function generateDailyQuestion(input: GenerateDailyQuestionInput): 
           type: "model_error",
           raw_error: err,
         },
-        runId: runId,
+        runId: input.runId,
       }
     }
 
@@ -154,7 +155,7 @@ export async function generateDailyQuestion(input: GenerateDailyQuestionInput): 
         message: "Failed to generate daily question",
         type: "model_error",
       },
-      runId: runId,
+      runId: input.runId,
     }
   }
 
@@ -165,7 +166,7 @@ export async function generateDailyQuestion(input: GenerateDailyQuestionInput): 
       message: "Unreachable code path",
       type: "internal_error",
     },
-    runId: runId,
+    runId: input.runId,
   }
 
 }

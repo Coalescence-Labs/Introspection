@@ -61,11 +61,10 @@ export function LibraryPageClient({ questions }: LibraryPageClientProps) {
       <div className="mb-12 flex flex-wrap gap-2">
         <button
           onClick={() => setSelectedCategory("all")}
-          className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-            selectedCategory === "all"
+          className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${selectedCategory === "all"
               ? "bg-accent text-accent-foreground"
               : "bg-secondary text-secondary-foreground hover:bg-accent/10"
-          }`}
+            }`}
           type="button"
           tabIndex={0}
         >
@@ -75,11 +74,10 @@ export function LibraryPageClient({ questions }: LibraryPageClientProps) {
           <button
             key={category}
             onClick={() => setSelectedCategory(category)}
-            className={`rounded-full px-4 py-2 cursor-pointer text-sm font-medium transition-colors ${
-              selectedCategory === category
+            className={`rounded-full px-4 py-2 cursor-pointer text-sm font-medium transition-colors ${selectedCategory === category
                 ? "bg-accent text-accent-foreground"
                 : "bg-secondary text-secondary-foreground hover:bg-accent/10"
-            }`}
+              }`}
             type="button"
             tabIndex={0}
           >
@@ -122,7 +120,7 @@ export function LibraryPageClient({ questions }: LibraryPageClientProps) {
                         <CardHeader className="pb-3">
                           <div className="flex items-start justify-between gap-4">
                             <div className="flex-1">
-                              <CardTitle className="text-lg">{question.simpleText}</CardTitle>
+                              <CardTitle className="text-lg">{question.simple_text}</CardTitle>
                               {question.tags && (
                                 <CardDescription className="mt-2 flex gap-2">
                                   {question.tags.map((tag) => (

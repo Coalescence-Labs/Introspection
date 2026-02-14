@@ -23,7 +23,7 @@ async function main() {
   const todayQuestion = getTodayQuestion(questions);
   const llms: LLMType[] = ["claude", "chatgpt", "gemini", "perplexity"];
 
-  console.log(`📝 Question: "${todayQuestion.simpleText}"`);
+  console.log(`📝 Question: "${todayQuestion.simple_text}"`);
   console.log(`🆔 ID: ${todayQuestion.id}\n`);
 
   console.log("Generating variants for all LLMs...\n");
@@ -31,7 +31,7 @@ async function main() {
   for (const llm of llms) {
     const variant = await provider.generateVariant({
       questionId: todayQuestion.id,
-      questionText: todayQuestion.simpleText,
+      questionText: todayQuestion.simple_text,
       llm,
       speechFriendly: false,
     });

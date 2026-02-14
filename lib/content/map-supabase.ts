@@ -32,7 +32,7 @@ export function mapQuestionsWithVariants(
     return {
       id: q.id,
       category: q.category,
-      simpleText: q.simple_text,
+      simple_text: q.simple_text,
       tags: q.tags ?? undefined,
       cadence: q.cadence ?? undefined,
       ...(hasVariants ? { variants } : {}),

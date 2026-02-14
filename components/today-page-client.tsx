@@ -84,7 +84,7 @@ export function TodayPageClient({ initialQuestion, todayLabel }: TodayPageClient
 
         {/* Hero Question */}
         <div className="mb-16 sm:mb-20">
-          <QuestionHero question={initialQuestion.simpleText} />
+          <QuestionHero question={initialQuestion.simple_text} />
         </div>
 
         {/* LLM Selector */}

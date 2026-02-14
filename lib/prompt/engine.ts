@@ -42,5 +42,5 @@ export function generatePrompt(
     throw new Error(`No template found for LLM: ${llm}`);
   }
 
-  return template.generate(question.simpleText, speechFriendly);
+  return template.generate(question.simple_text, speechFriendly);
 }

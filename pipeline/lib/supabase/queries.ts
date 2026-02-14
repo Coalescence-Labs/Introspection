@@ -1,5 +1,7 @@
 import { QuestionFeaturedHistory, QuestionRow } from "@/lib/content/schema";
 import { supabaseWorker } from "./supabase-worker";
+import { PostgrestError } from "@supabase/supabase-js";
+import { GenerationRunsRow } from "../schema";
 
 
 export async function hasRunForDate(date: string): Promise<boolean> {
@@ -25,6 +27,12 @@ export async function hasRunForDate(date: string): Promise<boolean> {
   }
 }
 
+/**
+ * Records the start of a generation run for the given date.
+ * @param date - Run date (YYYY-MM-DD).
+ * @returns The new run's UUID.
+ * @throws If insert fails (e.g. run_date is not unique; Supabase enforces uniqueness on run_date).
+ */
 export async function recordRunStart(date: string): Promise<string> {
   try {
     // Bun/uuid: Generate v7 UUID (date based) for the run id
@@ -47,10 +55,23 @@ export async function recordRunStart(date: string): Promise<string> {
   }
 }
 
+export async function getRunByDate(date: string): Promise<GenerationRunsRow | null> {
+  try {
+    const { data, error } = await supabaseWorker.from("generation_runs").select("*").eq("run_date", date).maybeSingle();
+    if (error) {
+      throw error;
+    }
+    return data ?? null;
+  } catch (error) {
+    console.error("Failed to get run by date:", error);
+    throw error;
+  }
+}
+
 interface RecordRunResultInput {
   status: "started" | "success" | "error";
   model: string;
-  runId: string;
+  runId?: string;
   date?: string;
   notes?: string;
 }
@@ -62,7 +83,7 @@ export async function recordRunResult({ date, status, model, runId, notes }: Rec
       run_date: date,
       status,
       model,
-      run_id: runId,
+      id: runId,
       notes,
     }, {
       onConflict: "run_date",
@@ -72,7 +93,6 @@ export async function recordRunResult({ date, status, model, runId, notes }: Rec
       throw error;
     }
   } catch (error) {
-    console.error("Failed to record run result:", error);
     throw error;
   }
 }
@@ -94,7 +114,7 @@ export async function getRecentDailyQuestions({ limit }: { limit?: number }): Pr
           )
         `)
         .order("created_at", { ascending: false })
-        .limit(limit ?? 10);
+        .limit(limit ?? 30);
 
     if (error) {
       throw error;
@@ -103,6 +123,8 @@ export async function getRecentDailyQuestions({ limit }: { limit?: number }): Pr
       console.warn("No recent daily questions found");
       return [];
     }
+
+    console.log("Recent daily questions:", JSON.stringify(data, null, 2));
 
     const questionFeaturedHistory = QuestionFeaturedHistory.array().parse(data?.filter((item) => item.questions).map((item) => ({
       questionId: item.question_id,
@@ -123,10 +145,12 @@ export async function getRecentDailyQuestions({ limit }: { limit?: number }): Pr
 }
 
 export async function insertGeneratedQuestion({ question }: { question: Omit<QuestionRow, "id"> }): Promise<string | null> {
+  const id = crypto.randomUUID();
   try {
     const { data, error } = await supabaseWorker
       .from("questions")
       .insert({
+        id,
         category: question.category,
         simple_text: question.simple_text,
         tags: question.tags ?? null,
