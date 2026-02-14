@@ -13,7 +13,7 @@ import { generatePrompt } from "@/lib/prompt/engine";
 
 interface TodayPageClientProps {
   initialQuestion: Question;
-  todayLabel: string;
+  todayLabel?: string;
 }
 
 export function TodayPageClient({ initialQuestion, todayLabel }: TodayPageClientProps) {
@@ -68,11 +68,11 @@ export function TodayPageClient({ initialQuestion, todayLabel }: TodayPageClient
   }, [selectedLLM, generatedPrompt]);
 
   return (
-    <main className="mx-auto max-w-5xl px-6">
-      <div className="flex min-h-screen flex-col py-16 sm:py-20">
+    <main className="mx-auto max-w-5xl px-6 flex flex-col gap-20">
+      <section className="flex flex-col py-16 sm:py-20" style={{ height: "100dvh" }}>
         {/* Header */}
         <div className="mb-16 sm:mb-20 flex items-center justify-between">
-          <div className="text-xs text-muted-foreground">Daily Question • {todayLabel}</div>
+          <div className="text-xs text-muted-foreground">Daily Question {todayLabel ? `• ${todayLabel}` : ""}</div>
           <Link
             href="/library"
             className="text-sm text-muted-foreground transition-colors hover:text-foreground"
@@ -83,28 +83,28 @@ export function TodayPageClient({ initialQuestion, todayLabel }: TodayPageClient
         </div>
 
         {/* Hero Question */}
-        <div className="mb-16 sm:mb-20">
+        <div className="mb-16 sm:mb-20 flex-1">
           <QuestionHero question={initialQuestion.simple_text} />
         </div>
 
         {/* LLM Selector */}
-        <div className="mb-10">
-          <LLMSelector selected={selectedLLM} onSelect={setSelectedLLM} />
+        <div>
+          <div className="mb-10">
+            <LLMSelector selected={selectedLLM} onSelect={setSelectedLLM} />
+          </div>
+
+          {/* Speech-Friendly Toggle */}
+          <div className="mb-10">
+            <SpeechToggle enabled={speechFriendly} onToggle={setSpeechFriendly} />
+          </div>
         </div>
 
-        {/* Speech-Friendly Toggle */}
-        <div className="mb-10">
-          <SpeechToggle enabled={speechFriendly} onToggle={setSpeechFriendly} />
-        </div>
-
-        <div className="flex-1" />
-
-        <div className="flex justify-center">
+        <div className="flex justify-center justify-self-end">
           <CopyButton text={generatedPrompt.fullPrompt} />
         </div>
 
         <div className="flex-1" />
-      </div>
+      </section>
 
       <div className="pb-12">
         <PromptPreview title={generatedPrompt.title} fullPrompt={generatedPrompt.fullPrompt} />

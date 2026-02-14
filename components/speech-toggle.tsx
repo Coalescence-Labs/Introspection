@@ -20,7 +20,7 @@ export function SpeechToggle({ enabled, onToggle }: SpeechToggleProps) {
       />
       <label
         htmlFor="speech-friendly"
-        className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground transition-colors hover:text-foreground"
       >
         <Volume2 className="h-4 w-4" />
         <span>Include speech-friendly version for TTS</span>

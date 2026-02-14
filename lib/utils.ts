@@ -25,3 +25,11 @@ export function getTodayString(): string {
   const now = new Date();
   return now.toISOString().split("T")[0];
 }
+
+/**
+ * Get today's date in UI formatted way
+ */
+export function getTodayLabel(): string {
+  const now = new Date();
+  return now.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+}
