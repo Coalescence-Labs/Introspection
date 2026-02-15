@@ -7,56 +7,64 @@ export function WelcomeContent() {
   return (
     <main className="relative z-10 flex min-h-screen flex-col px-6">
       <div className="snap-start flex flex-col flex-1 relative min-h-dvh pt-20 pb-[14rem] sm:pt-32">
-        <div className="mx-auto flex flex-1 w-full max-w-[900px] flex-col items-center justify-center text-center select-none">
-          <motion.span
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.6 }}
-            className="mb-6 text-xs uppercase tracking-[0.2em] text-muted-foreground"
-          >
-            INTROSPECTION
-          </motion.span>
-
-          <motion.h1
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="mb-6 text-[clamp(3rem,8vw,4.5rem)] font-medium leading-[1.4] tracking-[-0.02em] text-foreground"
-          >
-            Turn AI conversations into lasting insights
-          </motion.h1>
-
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="mb-10 max-w-2xl text-lg font-normal leading-relaxed text-foreground/80 sm:text-xl"
-          >
-            Questions designed to surface what's hidden in your past conversations. <br />
-            Works with any LLM — just copy, paste, and look closer.
-          </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-          >
-            <Link
-              href="/today"
-              tabIndex={0}
-              className="inline-flex h-12 min-w-[200px] items-center justify-center rounded-md bg-accent px-10 py-5 text-base font-semibold text-accent-foreground shadow-sm transition-all duration-[250ms] hover:scale-[1.02] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:text-lg"
-              prefetch={true}
+        {/* Hero text block: overlay (middle) sits above particles, below text/button */}
+        <div className="relative mx-auto flex flex-1 w-full max-w-[900px] flex-col items-center justify-center text-center select-none">
+          {/* Radial gradient overlay for text contrast — does not intercept clicks */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 z-0 rounded-full bg-[radial-gradient(ellipse_70%_70%_at_50%_50%,rgba(255,255,255,0.8)_0%,rgba(255,255,255,0.6)_45%,rgba(255,255,255,0)_70%)] dark:bg-[radial-gradient(ellipse_70%_70%_at_50%_50%,rgba(0,0,0,0.65)_0%,rgba(0,0,0,0.45)_45%,rgba(0,0,0,0)_70%)]"
+          />
+          <div className="relative z-10 flex flex-1 w-full flex-col items-center justify-center">
+            <motion.span
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6 }}
+              className="mb-6 text-xs uppercase tracking-[0.2em] text-muted-foreground"
             >
-              Try a question
-            </Link>
-          </motion.div>
+              INTROSPECTION
+            </motion.span>
+
+            <motion.h1
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="mb-6 text-[clamp(3rem,8vw,4.5rem)] font-medium leading-[1.4] tracking-[-0.02em] text-[#111] dark:text-foreground"
+            >
+              Turn AI conversations into lasting insights
+            </motion.h1>
+
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="mb-10 max-w-2xl text-lg font-normal leading-relaxed text-[#444] dark:text-foreground/85 sm:text-xl"
+            >
+              Questions designed to surface what's hidden in your past conversations. <br />
+              Works with any LLM — just copy, paste, and look closer.
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+            >
+              <Link
+                href="/today"
+                tabIndex={0}
+                className="hero-cta inline-flex h-12 min-w-[200px] items-center justify-center rounded-md bg-accent px-10 py-5 text-base font-semibold text-accent-foreground transition-all duration-[250ms] hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:text-lg"
+                prefetch={true}
+              >
+                Try a question
+              </Link>
+            </motion.div>
+          </div>
         </div>
 
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.4 }}
-          className="absolute bottom-4 left-0 right-0 text-center text-sm font-light text-muted-foreground/70"
+          className="absolute bottom-4 left-0 right-0 z-10 text-center text-sm font-light text-[#555] dark:text-muted-foreground/85"
         >
           Built by an independent developer, not a data company
         </motion.p>

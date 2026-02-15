@@ -323,12 +323,15 @@ export function ParticleField({
     geometry.setAttribute("uvParticle", new THREE.BufferAttribute(uvs, 2));
 
     const cloudRadius = Math.max(cloudWidth, cloudHeight) * 1.15;
+    const isDark = () => document.documentElement.classList.contains("dark");
+    const particleAlpha = isDark() ? 0.22 : 0.24;
     const material = new THREE.ShaderMaterial({
       uniforms: {
         uPointSize: { value: effectivePointSize * 15 },
         uCloudRadius: { value: cloudRadius },
         uFadeStart: { value: cloudRadius * 0.35 },
         uPositionTexture: { value: null as THREE.DataTexture | null },
+        uParticleAlpha: { value: particleAlpha },
       },
       vertexShader: `
         uniform float uPointSize;
@@ -348,10 +351,11 @@ export function ParticleField({
         }
       `,
       fragmentShader: `
+        uniform float uParticleAlpha;
         varying float vAlpha;
         void main() {
           float a = smoothstep(0.0, 0.15, length(gl_PointCoord - 0.5) * 2.0);
-          gl_FragColor = vec4(0.65, 0.65, 0.65, a * vAlpha * 0.28);
+          gl_FragColor = vec4(0.65, 0.65, 0.65, a * vAlpha * uParticleAlpha);
         }
       `,
       transparent: true,
@@ -375,6 +379,11 @@ export function ParticleField({
 
     handleResize();
     window.addEventListener("resize", handleResize);
+
+    const observer = new MutationObserver(() => {
+      material.uniforms.uParticleAlpha.value = isDark() ? 0.22 : 0.24;
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
 
     const mouseWorld = new THREE.Vector2(0, 0);
     const raycaster = new THREE.Raycaster();
@@ -429,6 +438,7 @@ export function ParticleField({
     return () => {
       running = false;
       cancelAnimationFrame(raf);
+      observer.disconnect();
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("pointermove", onPointerMove);
 

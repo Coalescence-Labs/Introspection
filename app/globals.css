@@ -169,6 +169,19 @@
   }
 }
 
+/* Hero CTA: accent shadow + hover pop over particle field */
+.hero-cta {
+  box-shadow:
+    0 1px 2px oklch(0 0 0 / 0.05),
+    0 8px 24px oklch(0.573 0.1049 174.44 / 0.25);
+}
+.hero-cta:hover {
+  filter: brightness(1.06) saturate(1.08);
+  box-shadow:
+    0 1px 2px oklch(0 0 0 / 0.05),
+    0 12px 28px oklch(0.573 0.1049 174.44 / 0.35);
+}
+
 /* Subtle glow behind question hero - drop-shadow can't be clipped */
 .question-hero {
   filter: drop-shadow(0 0 20px oklch(0.573 0.1049 174.44 / 0.18))
