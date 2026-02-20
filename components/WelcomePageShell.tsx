@@ -16,14 +16,18 @@ import { welcomeSections } from "@/components/welcome-sections";
 export function WelcomePageShell() {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const touchMode = useTouchDevice();
-  const { currentSection, isScrolling } = useCustomScroll(
+  const { currentSection, isScrolling, setCurrentSection } = useCustomScroll(
     containerRef,
     welcomeSections.length,
     touchMode
   );
 
+  const scrollToNextSection = () => {
+    setCurrentSection((prev: number) => Math.min(prev + 1, welcomeSections.length - 1));
+  };
+
   return (
-    <WelcomeScrollContext.Provider value={{ currentSection, isScrolling }}>
+    <WelcomeScrollContext.Provider value={{ currentSection, isScrolling, scrollToNextSection }}>
       <div
         className={
           touchMode

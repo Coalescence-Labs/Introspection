@@ -2,10 +2,13 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { welcome as s } from "./welcome-styles";
+import { useWelcomeScroll } from "@/lib/contexts/welcome-scroll-context";
 import { cn } from "@/lib/utils";
+import { ScrollInvite } from "@/components/scroll-invite";
+import { welcome as s } from "./welcome-styles";
 
 export function WelcomeHeroSection() {
+  const { scrollToNextSection } = useWelcomeScroll();
   return (
     <>
       <div className="relative mx-auto flex flex-1 w-full max-w-[900px] flex-col items-center justify-center text-center select-none">
@@ -60,13 +63,22 @@ export function WelcomeHeroSection() {
               Try a question
             </Link>
           </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="mt-5 sm:mt-10 flex flex-col items-center"
+          >
+            <ScrollInvite onScrollClick={scrollToNextSection} />
+          </motion.div>
         </div>
       </div>
 
       <motion.p
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.6, delay: 0.4 }}
+        transition={{ duration: 0.6, delay: 0.5 }}
         className={s.hero.footer}
       >
         Built by an independent developer, not a data company
