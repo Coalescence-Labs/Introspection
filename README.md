@@ -18,80 +18,92 @@ Introspection makes this reflection effortless.
 
 ## How It Works
 
-1. **Choose Your Focus** - Select from curated introspection questions like:
-   - "What's the craziest thing I've thought of so far?"
-   - "What new topic would be best for me to explore next?"
-   - "What can I specifically do to make the next step in my career?"
-
-2. **Select Your LLM** - Pick which AI assistant you'll be asking (Claude, ChatGPT, Gemini, etc.)
-
-3. **Copy & Ask** - Get an optimized prompt tailored specifically for that LLM, ready to paste into your conversation
+1. **Choose Your Focus** — Select from curated introspection questions (today’s question or browse the library).
+2. **Select Your LLM** — Pick which AI assistant you’ll use (Claude, ChatGPT, Gemini, Perplexity).
+3. **Copy & Ask** — Get an optimized prompt tailored for that LLM, ready to paste into your conversation.
 
 ## Key Features
 
-### Simple & Accessible
-- Clean, straightforward interface anyone can use
-- No technical knowledge required
-- Works with any LLM you prefer
-
-### LLM-Optimized Prompts
-Behind each simple question is a carefully researched, refined prompt that:
-- Uses the most effective phrasing for that specific LLM
-- Includes explicit instructions to maximize quality responses
-- Leverages each model's unique strengths
-
-### Two-Layer Design
-- **What you see**: A clear, simple question
-- **What gets copied**: A comprehensive, optimized prompt engineered for best results
-
-### Speech-Friendly Responses
-- Option to request a TTS-optimized version of the LLM's response
-- Formatted for natural text-to-speech playback
-- Compatible with:
-  - Native LLM voice features (ChatGPT Voice, Claude voice modes)
-  - ElevenLabs
-  - Any other TTS service
-- Removes markdown, adds natural pauses, uses conversational phrasing
+- **Today’s question** — A single question per day; optional override via Supabase for editorial control.
+- **Question library** — Browse and use any question from the full set.
+- **LLM-optimized prompts** — Per-LLM phrasing and instructions; template-based or editorial variants from the pipeline.
+- **Speech-friendly option** — TTS-optimized prompt variant (natural pauses, minimal markdown) for voice playback.
+- **Copy to clipboard** — One click to copy the full prompt.
 
 ## Use Cases
 
-- **Daily Reflection** - Check in with your AI conversation history each day
-- **Career Development** - Identify actionable insights for professional growth
-- **Idea Mining** - Surface creative concepts from past brainstorming sessions
-- **Learning Optimization** - Discover knowledge gaps and learning opportunities
-- **Pattern Recognition** - Understand your thinking patterns and interests over time
-
-## Philosophy
-
-Introspection is built on the belief that:
-1. Our AI conversations contain valuable insights we often overlook
-2. The right questions unlock the right answers
-3. Tools should be simple, not complicated
-4. Different AIs respond best to different prompt styles
+- **Daily reflection** — Check in with your AI conversation history each day.
+- **Career development** — Identify actionable insights for professional growth.
+- **Idea mining** — Surface creative concepts from past brainstorming sessions.
+- **Learning optimization** — Discover knowledge gaps and learning opportunities.
+- **Pattern recognition** — Understand your thinking patterns and interests over time.
 
 ## Getting Started
 
-*(Coming soon - setup instructions will be added as the project develops)*
+**Requirements:** [Bun](https://bun.sh) (recommended) or Node.js 18+.
+
+```bash
+git clone <repo-url>
+cd introspection
+bun install
+bun run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000). The app works with **local content only** by default (no env vars required).
+
+### Optional: Supabase
+
+To load questions and “today” config from Supabase instead of local files, set:
+
+- `SUPABASE_URL` (or `NEXT_PUBLIC_SUPABASE_URL`)
+- `SUPABASE_PUBLISHABLE_KEY` (or `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`)
+
+Use the **anon** key only; RLS should allow **SELECT** for the app. See `.env.example` and [DEPLOYMENT.md](./DEPLOYMENT.md).
+
+### Scripts
+
+| Command | Description |
+|--------|-------------|
+| `bun run dev` | Start dev server |
+| `bun run build` | Production build |
+| `bun run start` | Start production server |
+| `bun run lint` | Run Biome linter |
+| `bun run test` | Playwright tests |
+| `bun run pipeline:validate` | Validate content |
+| `bun run pipeline:seed` | Seed Supabase (requires service role key) |
+
+## Noteworthy aspects
+
+- **Next.js 16** (App Router), **React 19**, TypeScript. **Bun** for install/run/scripts.
+- **Cache Components** (`use cache`): shared question list cached for 1 hour; daily question cached per calendar day so 8pm→7am gets the right day. See [Next.js caching](https://nextjs.org/docs/app/api-reference/directives/use-cache).
+- **Optional Supabase** — Read-only from the app (anon key). Content can live in `content/*.ts` or in Supabase; pipeline/seed use the service role and are **not** exposed to the web.
+- **Pipeline** — CLI scripts for validating content, seeding Supabase, and (with API keys) generating daily questions. Run locally or from a secure cron; see `pipeline/` and DEPLOYMENT.md.
+- **Security** — `/__preview` is dev-only (proxy + server redirect in production). RLS and env usage are documented in [SECURITY.md](./SECURITY.md).
+- **Accessibility** — Keyboard shortcuts (arrow keys for LLM), theme toggle, semantic markup.
+
+## Deployment
+
+Designed for [Vercel](https://vercel.com) with zero config. See **[DEPLOYMENT.md](./DEPLOYMENT.md)** for steps, env vars, and production checklist.
 
 ## Roadmap
 
-- [ ] Core question library
-- [ ] LLM-specific prompt optimization
-- [ ] Speech-friendly response generation
-- [ ] Web-based interface
-- [ ] Daily question rotation
+- [x] Core question library
+- [x] LLM-specific prompt optimization
+- [x] Speech-friendly response option
+- [x] Web-based interface
+- [x] Daily question rotation (with optional Supabase override)
+- [x] Mobile-friendly design
 - [ ] Custom question creation
 - [ ] Browser extension support
-- [ ] Mobile-friendly design
 
 ## Contributing
 
-This project is in early development. Ideas, feedback, and contributions are welcome!
+Ideas, feedback, and contributions are welcome.
 
 ## License
 
-*(To be determined)*
+Apache-2.0. See [LICENSE](./LICENSE).
 
 ---
 
-**Introspection** - Because your AI conversations are worth revisiting.
+**Introspection** — Because your AI conversations are worth revisiting.
