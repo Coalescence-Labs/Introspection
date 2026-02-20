@@ -52,9 +52,10 @@ function CornerSparkle({ corner, delay }: { corner: "top-right" | "bottom-left";
 interface CopyButtonProps {
   text: string;
   onCopy?: () => void;
+  disabled?: boolean;
 }
 
-export function CopyButton({ text, onCopy }: CopyButtonProps) {
+export function CopyButton({ text, onCopy, disabled }: CopyButtonProps) {
   const [copied, setCopied] = useState(false);
 
   // Auto-reset after 1.5s
@@ -72,6 +73,7 @@ export function CopyButton({ text, onCopy }: CopyButtonProps) {
   }, [text]);
 
   const handleCopy = async () => {
+    if (disabled || !text) return;
     try {
       // Try the modern clipboard API first
       if (navigator.clipboard?.writeText) {
@@ -128,6 +130,7 @@ export function CopyButton({ text, onCopy }: CopyButtonProps) {
           variant="accent"
           size="xl"
           onClick={handleCopy}
+          disabled={disabled}
           className="relative w-[280px] overflow-visible cursor-pointer"
           tabIndex={0}
         >

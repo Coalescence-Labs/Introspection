@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { headers } from "next/headers";
 import { cacheLife, cacheTag } from "next/cache";
-import { TodayPageClient } from "@/components/today-page-client";
+import { TodayPageShell, TodayQuestionBlock } from "@/components/today-page-client";
 import { getCachedQuestions, loadTodayConfig } from "@/lib/content/loader";
 import { getTodayQuestion } from "@/lib/content/rotation";
 import { getTodayString } from "@/lib/utils";
@@ -21,27 +21,29 @@ async function getCachedDailyQuestion(dateKey: string) {
     : getTodayQuestion(questions);
 }
 
-/** Fetches dynamic data (headers + date); must run inside Suspense to avoid blocking the route. */
-async function TodayContent() {
+/** Fetches the daily question; runs inside Suspense so the shell can render instantly. */
+async function TodayQuestionContent() {
   await headers();
   const todayQuestion = await getCachedDailyQuestion(getTodayString());
-  return <TodayPageClient initialQuestion={todayQuestion} />;
+  return <TodayQuestionBlock initialQuestion={todayQuestion} />;
 }
 
-/** Shown while TodayContent is loading (Suspense fallback). */
-function TodayFallback() {
+/** Fallback for the question block (hero only); shell is already visible. */
+function TodayQuestionFallback() {
   return (
-    <main className="flex min-h-[60vh] flex-col items-center justify-center px-4">
+    <div className="mb-16 sm:mb-20 flex-1 flex flex-col items-center justify-center min-h-[200px]">
       <div className="text-muted-foreground animate-pulse">Loading today’s question…</div>
-    </main>
+    </div>
   );
 }
 
-/** Today's question page. Dynamic (date-dependent); data cached per day via getCachedDailyQuestion. */
+/** Today's question page. Shell (header, LLM, speech, copy) shows immediately; question loads in Suspense. */
 export default function TodayPage() {
   return (
-    <Suspense fallback={<TodayFallback />}>
-      <TodayContent />
-    </Suspense>
+    <TodayPageShell>
+      <Suspense fallback={<TodayQuestionFallback />}>
+        <TodayQuestionContent />
+      </Suspense>
+    </TodayPageShell>
   );
 }
