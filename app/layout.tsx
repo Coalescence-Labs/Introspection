@@ -43,7 +43,7 @@ export default function RootLayout({
       <body className={`${satoshi.variable} ${commissioner.variable}`}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="light"
+          defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
