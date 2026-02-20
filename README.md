@@ -22,6 +22,36 @@ Introspection makes this reflection effortless.
 2. **Select Your LLM** — Pick which AI assistant you’ll use (Claude, ChatGPT, Gemini, Perplexity).
 3. **Copy & Ask** — Get an optimized prompt tailored for that LLM, ready to paste into your conversation.
 
+## Architecture
+
+Introspection uses a hybrid storage and pipeline architecture.
+
+The system consists of:
+
+- **Web application** — Next.js interface for browsing questions and generating prompts
+- **Content pipeline** — TypeScript CLI scripts for validating, generating, and seeding questions
+- **Storage layer**
+  - Supabase-backed storage (primary production configuration)
+  - Local file storage (development and offline support)
+- **Caching layer** — Next.js Cache Components ensure efficient access and daily consistency
+- **Automation layer** — Daily question generation can run via cron or systemd timers
+
+Typical flow:
+
+automation job → generate or select question → validate → store → cached → surfaced in UI → used for reflection
+
+This allows Introspection to operate continuously with minimal manual intervention.
+
+## Design Principles
+
+Introspection is built around a few core principles:
+
+- **Reflection as infrastructure** — AI should support long-term thinking, not just immediate answers
+- **Hybrid storage model** — Supabase-backed with full local content support
+- **Automation-friendly** — Pipeline designed for scheduled, autonomous operation
+- **LLM-agnostic** — Works with any major AI assistant
+- **Minimal surface area** — Simple interface with a robust underlying system
+
 ## Key Features
 
 - **Today’s question** — A single question per day; optional override via Supabase for editorial control.
