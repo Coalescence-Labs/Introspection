@@ -2,7 +2,7 @@
 
 import { getSupabase } from "@/lib/supabase/server";
 import { mapQuestionsWithVariants } from "./map-supabase";
-import type { Question } from "./schema";
+import { Question } from "./schema";
 import {
   PromptVariantRow,
   QuestionLibrary,
@@ -31,6 +31,14 @@ async function loadTodayConfigFromLocal(): Promise<string | null> {
   }
 }
 
+/** Parse variant rows from Supabase; on empty or invalid data return []. */
+function parseVariantRows(data: unknown): PromptVariantRow[] {
+  const raw = Array.isArray(data) ? data : [];
+  if (raw.length === 0) return [];
+  const parsed = PromptVariantRow.array().safeParse(raw);
+  return parsed.success ? parsed.data : [];
+}
+
 /**
  * Load and validate question library.
  * Uses Supabase when env is set; otherwise falls back to local content.
@@ -51,11 +59,12 @@ export async function loadQuestions(): Promise<Question[]> {
     if (variantsRes.error) throw variantsRes.error;
 
     const questionRows = QuestionRow.array().parse(questionsRes.data ?? []);
-    const variantRows = PromptVariantRow.array().parse(variantsRes.data ?? []);
+    const variantRows = parseVariantRows(variantsRes.data);
     const mapped = mapQuestionsWithVariants(questionRows, variantRows);
     const validated = QuestionLibrary.parse({ questions: mapped });
     return validated.questions;
-  } catch {
+  } catch (error) {
+    console.error("Failed to load questions from Supabase", error);
     return loadQuestionsFromLocal();
   }
 }
@@ -80,7 +89,8 @@ export async function loadTodayConfig(): Promise<string | null> {
     if (error) throw error;
     const row = TodayConfigSelect.parse(data);
     return row.today_question_id;
-  } catch {
+  } catch (error) {
+    console.error("Failed to load today config from Supabase", error);
     return loadTodayConfigFromLocal();
   }
 }
@@ -104,11 +114,63 @@ export async function getQuestionById(id: string): Promise<Question | undefined>
 
     if (questionRes.error || !questionRes.data) throw questionRes.error;
     const questionRow = QuestionRow.parse(questionRes.data);
-    const variantRows = PromptVariantRow.array().parse(variantsRes.data ?? []);
+    const variantRows = parseVariantRows(variantsRes.data);
     const [mapped] = mapQuestionsWithVariants([questionRow], variantRows);
     return QuestionLibrary.parse({ questions: [mapped] }).questions[0];
-  } catch {
+  } catch (error) {
+    console.error("Failed to get question by ID from Supabase", error);
     const questions = await loadQuestionsFromLocal();
     return questions.find((q) => q.id === id);
   }
+}
+
+
+/************
+ * 
+ * IN PROGRESS
+ */
+export async function getDailyQuestion(): Promise<Question> {
+  
+  try {
+  const supabase = getSupabase();
+  if (!supabase) {
+    throw new Error("Supabase not initialized");
+  }
+  const { data, error } = await supabase
+    .from("today_config")
+    .select("today_question_id,question:today_question_id(*)")
+    .eq("id", 1)
+    .single();
+
+  if (error) throw error;
+
+  const row = QuestionRow.parse(data.question);
+  if (!row) throw new Error("Question not found");
+  
+  // Try and get variants
+  const variants = await supabase.from("prompt_variants").select("*").eq("question_id", row.id);
+  if (variants.error) {
+    console.error("Failed to get variants from Supabase", variants.error);
+  }
+
+  const variantRows = parseVariantRows(variants.data);
+  const mapped = mapQuestionsWithVariants([row], variantRows);
+
+  const validated = Question.parse( mapped[0] );
+
+  return validated;
+
+} catch (error) {
+    console.error("Failed to get daily question from Supabase", error);
+
+
+
+    const questions = await loadQuestionsFromLocal();
+    // Select random question deterministically based on date
+    const date = new Date();
+    const dayOfYear = Math.floor(date.getTime() / (1000 * 60 * 60 * 24));
+    const question = questions[dayOfYear % questions.length];
+    return question;
+}
+
 }

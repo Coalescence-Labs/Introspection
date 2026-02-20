@@ -3,6 +3,8 @@ import { loadQuestions, loadTodayConfig } from "@/lib/content/loader";
 import { getTodayQuestion } from "@/lib/content/rotation";
 import { getTodayString } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 export default async function PreviewPage() {
   const questions = await loadQuestions();
   const todayConfig = await loadTodayConfig();
