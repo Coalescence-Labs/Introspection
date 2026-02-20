@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useWelcomeScroll } from "@/lib/contexts/welcome-scroll-context";
 import * as THREE from "three";
 import { GPUComputationRenderer } from "three/examples/jsm/misc/GPUComputationRenderer.js";
 
@@ -158,6 +159,7 @@ export function ParticleField({
   targetFps,
 }: ParticleFieldProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const { currentSection } = useWelcomeScroll();
 
   useEffect(() => {
     const container = containerRef.current;

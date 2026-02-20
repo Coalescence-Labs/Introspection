@@ -16,14 +16,14 @@ export const welcome = {
       "absolute bottom-4 left-0 right-0 z-10 text-center text-sm font-light text-[#555] dark:text-muted-foreground/85",
   },
   card:
-    "w-full max-w-4xl rounded-2xl border border-border/50 bg-foreground/[0.02] px-8 py-10 text-center backdrop-blur-[2px] sm:px-12 sm:py-12",
+    "w-full max-w-4xl rounded-2xl border border-border/50 bg-foreground/[0.02] px-8 py-10 text-center backdrop-blur-sm sm:px-12 sm:py-12",
   sectionTitle:
-    "text-3xl font-bold leading-tight text-foreground sm:text-4xl",
+    "text-3xl sm:text-4xl font-bold leading-tight text-foreground sm:text-4xl",
   body: "text-xl font-normal leading-relaxed text-foreground/80",
-  bodyEmphasis: "text-xl font-normal leading-relaxed text-foreground/95",
-  bodyLarge: "text-2xl font-normal leading-relaxed text-foreground/95",
+  bodyEmphasis: "text-xl font-normal leading-tight text-foreground/95",
+  bodyLarge: "text-lg sm:text-2xl font-normal leading-relaxed text-foreground/95",
   listCenter:
-    "mx-auto max-w-xl space-y-2 text-xl font-normal leading-relaxed text-foreground/95 flex flex-col items-center justify-center",
+    "mx-auto max-w-xl space-y-2 text-base sm:text-lg font-normal leading-relaxed text-foreground/95 flex flex-col items-center justify-center text-foreground/80",
   listSteps:
     "mx-auto max-w-xl list-inside list-decimal space-y-10 text-left text-xl md:text-2xl font-normal leading-relaxed text-foreground/80",
   quote: "text-xl italic font-normal text-foreground",

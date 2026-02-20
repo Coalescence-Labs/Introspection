@@ -4,9 +4,9 @@ import { RefObject, useState, useEffect, useRef } from "react";
 import { throttle } from "@/lib/utils";
 
 const SCROLL_DELAY_MS = 600;
-const SCROLL_THROTTLE_MS = 600;
+const SCROLL_THROTTLE_MS = 900;
 const TOUCH_SWIPE_THRESHOLD_PX = 50;
-const TOUCH_SECTION_THROTTLE_MS = 500;
+const TOUCH_SECTION_THROTTLE_MS = 700;
 const TOUCH_MOVE_IGNORE_PX = 12;
 
 function sectionFromScrollTop(scrollTop: number, sectionHeight: number, count: number): number {
