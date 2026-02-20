@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useWelcomeScroll } from "@/lib/contexts/welcome-scroll-context";
+import { welcomeSections } from "@/components/welcome-sections";
 import * as THREE from "three";
 import { GPUComputationRenderer } from "three/examples/jsm/misc/GPUComputationRenderer.js";
 
@@ -56,6 +57,9 @@ uniform float uNoiseSpeed;
 uniform float uDamping;
 uniform float uMaxSpeed;
 uniform vec2 uMouse;
+uniform float uRepelFromCenter;
+uniform float uRepelCenterOffsetY;
+uniform float uAttractToCenter;
 
 float hash(vec2 p, float t) {
   return fract(sin(dot(p * 12.9898 + t * 0.1, vec2(78.233, 45.164))) * 43758.5453);
@@ -113,6 +117,25 @@ void main() {
   vel.x += (hash(uv + 0.1, uTime + 1.0) - 0.5) * 0.025 * uDt;
   vel.y += (jitter - 0.5) * 0.025 * uDt;
 
+  // Repel from center (e.g. when CTA section active — scatter around edges)
+  if (uRepelFromCenter > 0.0) {
+    vec2 center = vec2(0.0, uRepelCenterOffsetY);
+    vec2 fromCenter = pos.xy - center;
+    float dist = length(fromCenter) + 0.001;
+    float strength = uRepelFromCenter * uDt * 1.2;
+    vel.x += (fromCenter.x / dist) * strength;
+    vel.y += (fromCenter.y / dist) * strength;
+  }
+
+  // Attract toward center when scrolling sections
+  if (uAttractToCenter > 0.0) {
+    vec2 toCenter = -pos.xy;
+    float dist = length(toCenter) + 0.001;
+    float strength = uAttractToCenter * uDt * 0.4;
+    vel.x += (toCenter.x / dist) * strength;
+    vel.y += (toCenter.y / dist) * strength;
+  }
+
   // Mouse attraction
   float dx = uMouse.x - pos.x;
   float dy = uMouse.y - pos.y;
@@ -159,7 +182,15 @@ export function ParticleField({
   targetFps,
 }: ParticleFieldProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const { currentSection } = useWelcomeScroll();
+  const { currentSection, isScrolling } = useWelcomeScroll();
+  const velocityUniformsRef = useRef<{
+    uRepelFromCenter?: { value: number };
+    uRepelCenterOffsetY?: { value: number };
+    uMouseStrength?: { value: number };
+    uAttractToCenter?: { value: number };
+  } | null>(null);
+
+  const ctaSectionIndex = welcomeSections.length - 1;
 
   useEffect(() => {
     const container = containerRef.current;
@@ -296,6 +327,11 @@ export function ParticleField({
     velVar.material.uniforms.uDamping = { value: damping };
     velVar.material.uniforms.uMaxSpeed = { value: maxSpeed };
     velVar.material.uniforms.uMouse = { value: new THREE.Vector2(0, 0) };
+    velVar.material.uniforms.uRepelFromCenter = { value: 0 };
+    velVar.material.uniforms.uRepelCenterOffsetY = { value: 0 };
+    velVar.material.uniforms.uAttractToCenter = { value: 0 };
+
+    velocityUniformsRef.current = velVar.material.uniforms;
 
     posVar.material.uniforms.uDt = { value: 0.016 };
 
@@ -438,6 +474,7 @@ export function ParticleField({
     let raf = requestAnimationFrame(tick);
 
     return () => {
+      velocityUniformsRef.current = null;
       running = false;
       cancelAnimationFrame(raf);
       observer.disconnect();
@@ -456,6 +493,28 @@ export function ParticleField({
       }
     };
   }, [count, pointSize, cloudWidth, cloudHeight, targetFps]);
+
+  // ~75px down in world space (camera z=22, FOV 60° → at z=0 height ~25.4; 75/900*25.4 ≈ 2.1)
+  const REPEL_CENTER_OFFSET_Y = -2.1;
+
+  const MOUSE_STRENGTH_DEFAULT = 0.06;
+  const MOUSE_STRENGTH_CTA = 0.71;
+
+  const ATTRACT_TO_CENTER_STRENGTH = 0.35;
+
+  useEffect(() => {
+    const uniforms = velocityUniformsRef.current;
+    if (!uniforms?.uRepelFromCenter || !uniforms?.uRepelCenterOffsetY) return;
+    const active = currentSection === ctaSectionIndex;
+    uniforms.uRepelFromCenter.value = active ? 0.91 : 0;
+    uniforms.uRepelCenterOffsetY.value = active ? REPEL_CENTER_OFFSET_Y : 0;
+    if (uniforms.uMouseStrength) {
+      uniforms.uMouseStrength.value = active ? MOUSE_STRENGTH_CTA : MOUSE_STRENGTH_DEFAULT;
+    }
+    if (uniforms.uAttractToCenter) {
+      uniforms.uAttractToCenter.value = isScrolling ? ATTRACT_TO_CENTER_STRENGTH : 0;
+    }
+  }, [currentSection, ctaSectionIndex, isScrolling]);
 
   return (
     <div

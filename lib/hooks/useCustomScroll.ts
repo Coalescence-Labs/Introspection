@@ -8,6 +8,7 @@ const SCROLL_THROTTLE_MS = 900;
 const TOUCH_SWIPE_THRESHOLD_PX = 50;
 const TOUCH_SECTION_THROTTLE_MS = 700;
 const TOUCH_MOVE_IGNORE_PX = 12;
+const IS_SCROLLING_RESET_MS = 700;
 
 function sectionFromScrollTop(scrollTop: number, sectionHeight: number, count: number): number {
   if (sectionHeight <= 0) return 0;
@@ -25,12 +26,29 @@ export function useCustomScroll(
   touchMode: boolean
 ) {
   const [currentSection, setCurrentSection] = useState(0);
+  const [isScrolling, setIsScrolling] = useState(false);
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSnappingRef = useRef(false);
   const currentSectionRef = useRef(0);
   const touchStartYRef = useRef(0);
   const touchIsScrollRef = useRef(false);
 
   currentSectionRef.current = currentSection;
+
+  const markScrolling = () => {
+    setIsScrolling(true);
+    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+    scrollTimeoutRef.current = setTimeout(() => {
+      setIsScrolling(false);
+      scrollTimeoutRef.current = null;
+    }, IS_SCROLLING_RESET_MS);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+    };
+  }, []);
 
   // Desktop: programmatic scroll to current section
   useEffect(() => {
@@ -89,6 +107,7 @@ export function useCustomScroll(
     const scrollToSection = (index: number) => {
       const top = Math.max(0, Math.min(index, itemCount - 1)) * h();
       setCurrentSection(Math.max(0, Math.min(index, itemCount - 1)));
+      markScrolling();
       window.scrollTo({ top, behavior: "smooth" });
     };
 
@@ -156,5 +175,5 @@ export function useCustomScroll(
     return () => container.removeEventListener("wheel", handleWheel);
   }, [containerRef, itemCount, touchMode]);
 
-  return { currentSection, setCurrentSection };
+  return { currentSection, setCurrentSection, isScrolling };
 }

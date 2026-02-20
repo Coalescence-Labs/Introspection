@@ -28,5 +28,5 @@ export const welcome = {
     "mx-auto max-w-xl list-inside list-decimal space-y-10 text-left text-xl md:text-2xl font-normal leading-relaxed text-foreground/80",
   quote: "text-xl italic font-normal text-foreground",
   ctaSecondary:
-    "inline-flex h-12 min-w-[200px] items-center justify-center rounded-md bg-accent px-10 py-5 text-base font-semibold text-accent-foreground shadow-sm transition-all duration-[250ms] hover:scale-[1.02] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:text-lg",
+    "inline-flex h-12 min-w-[200px] items-center justify-center rounded-md bg-accent px-10 py-5 text-base font-semibold text-accent-foreground shadow-sm transition-all duration-[250ms] hover:scale-[1.02] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:text-lg select-none",
 } as const;

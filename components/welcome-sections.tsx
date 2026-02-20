@@ -219,7 +219,7 @@ export function WelcomeCtaSection() {
   return (
     <div className="mx-auto flex max-w-[900px] flex-col items-center justify-center text-center">
       <h2 className={`${s.sectionTitle} mb-6`}>Ready to reflect?</h2>
-      <p className={`${s.bodyEmphasis} mb-10 max-w-xl font-medium`}>
+      <p className={`${s.bodyEmphasis} mb-10 max-w-xl font-medium select-none`}>
         Start with a question designed to surface what's already in your conversations.
       </p>
       <Link href="/today" className={s.ctaSecondary} prefetch={true}>
