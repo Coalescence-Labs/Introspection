@@ -1,11 +1,12 @@
 import { ParticleField } from "@/components/ParticleField";
 import { WelcomeContent } from "@/components/WelcomeContent";
+import { WelcomePageShell } from "@/components/WelcomePageShell";
 
 export default function WelcomePage() {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background">
+    <WelcomePageShell>
       <ParticleField />
       <WelcomeContent />
-    </div>
+    </WelcomePageShell>
   );
 }

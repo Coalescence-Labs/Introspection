@@ -33,3 +33,18 @@ export function getTodayLabel(): string {
   const now = new Date();
   return now.toLocaleDateString("en-US", { month: "long", day: "numeric" });
 }
+
+/** Throttle a function to at most once per `delay` ms. Preserves argument types. */
+export function throttle<T extends readonly unknown[]>(
+  fn: (...args: T) => void,
+  delay: number
+): (...args: T) => void {
+  let last = 0;
+  return (...args: T): void => {
+    const now = Date.now();
+    if (now - last >= delay) {
+      last = now;
+      fn(...args);
+    }
+  };
+}

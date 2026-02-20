@@ -1,13 +1,25 @@
 "use client";
 
+import { useRef } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { useCustomScroll } from "@/lib/hooks/useCustomScroll";
+import { useTouchDevice } from "@/lib/hooks/useTouchDevice";
 import { welcome as s } from "./welcome-styles";
+import { WelcomeSection } from "./welcome-section";
+
+const SECTION_COUNT = 5;
+
+const mainClasses = "relative z-10 px-6 flex flex-col";
 
 export function WelcomeContent() {
-  return (
-    <main className="relative z-10 flex min-h-screen flex-col px-6">
-      <section className="snap-start flex flex-col justify-around flex-1 relative min-h-dvh pt-20 pb-[14rem] sm:pt-32">
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const touchMode = useTouchDevice();
+  const { currentSection } = useCustomScroll(containerRef, SECTION_COUNT, touchMode);
+
+  const sections = (
+    <>
+      <WelcomeSection active={currentSection === 0} touchScroll={touchMode}>
         {/* Hero text block: overlay (middle) sits above particles, below text/button */}
         <div className="relative mx-auto flex flex-1 w-full max-w-[900px] flex-col items-center justify-center text-center select-none">
           {/* Radial gradient overlay for text contrast — does not intercept clicks */}
@@ -15,7 +27,7 @@ export function WelcomeContent() {
             aria-hidden
             className="pointer-events-none absolute inset-0 z-0 rounded-full bg-[radial-gradient(ellipse_70%_70%_at_50%_50%,rgba(255,255,255,0.8)_0%,rgba(255,255,255,0.6)_45%,rgba(255,255,255,0)_70%)] dark:bg-[radial-gradient(ellipse_70%_70%_at_50%_50%,rgba(0,0,0,0.65)_0%,rgba(0,0,0,0.45)_45%,rgba(0,0,0,0)_70%)]"
           />
-          <div className="relative z-10 flex flex-1 w-full flex-col items-center justify-center">
+          <div className="z-10 flex flex-1 w-full flex-col items-center justify-center">
             <motion.span
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -74,8 +86,8 @@ export function WelcomeContent() {
         >
           Built by an independent developer, not a data company
         </motion.p>
-      </section>
-      <section className="snap-start flex flex-col items-center justify-center relative h-dvh px-6">
+      </WelcomeSection>
+      <WelcomeSection active={currentSection === 1} touchScroll={touchMode}>
         <div className="mx-auto w-full max-w-[1200px] flex flex-col items-center justify-center">
           <div className={s.card}>
             <h2 className={`${s.sectionTitle} mb-8`}>
@@ -130,8 +142,8 @@ export function WelcomeContent() {
             </motion.div>
           </div>
         </div>
-      </section>
-      <section className="snap-start flex flex-col items-center justify-center relative h-dvh px-6">
+      </WelcomeSection>
+      <WelcomeSection active={currentSection === 2} touchScroll={touchMode}>
         <motion.div
           initial="hidden"
           whileInView="visible"
@@ -181,8 +193,8 @@ export function WelcomeContent() {
             <p>Lightweight by design.</p>
           </motion.div>
         </motion.div>
-      </section>
-      <section className="snap-start flex flex-col items-center justify-center relative h-dvh px-6">
+      </WelcomeSection>
+      <WelcomeSection active={currentSection === 3} touchScroll={touchMode}>
         <div className="mx-auto flex max-w-[900px] flex-col items-center justify-center text-center">
           <h2 className={`${s.sectionTitle} mb-10`}>The Result</h2>
           <div className={`${s.body} mb-10 space-y-2`}>
@@ -193,8 +205,8 @@ export function WelcomeContent() {
           <p className={`${s.body} mb-4`}>You've already done the thinking.</p>
           <p className={s.body}>Now see it.</p>
         </div>
-      </section>
-      <section className="snap-start flex flex-col items-center justify-center relative h-dvh px-6">
+      </WelcomeSection>
+      <WelcomeSection active={currentSection === 4} touchScroll={touchMode}>
         <div className="mx-auto flex max-w-[900px] flex-col items-center justify-center text-center">
           <h2 className={`${s.sectionTitle} mb-6`}>Ready to reflect?</h2>
           <p className={`${s.body} mb-10 max-w-xl`}>
@@ -204,7 +216,21 @@ export function WelcomeContent() {
             Try a question
           </Link>
         </div>
-      </section>
-    </main>
+      </WelcomeSection>
+    </>
+  );
+
+  if (touchMode) {
+    return <main className={mainClasses}>{sections}</main>;
+  }
+
+  return (
+    <div
+      ref={containerRef}
+      className="h-dvh overflow-y-auto overflow-x-hidden touch-pan-y overscroll-contain"
+      style={{ WebkitOverflowScrolling: "touch" } as React.CSSProperties}
+    >
+      <main className={mainClasses}>{sections}</main>
+    </div>
   );
 }
