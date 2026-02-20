@@ -1,8 +1,12 @@
+/**
+ * Pipeline Supabase queries (service role). Generation runs, questions, today_config, featured history.
+ * Not used by the web app; app uses anon client in lib/supabase/server.ts.
+ */
+
 import { QuestionFeaturedHistory, QuestionRow } from "@/lib/content/schema";
 import { supabaseWorker } from "./supabase-worker";
 import { PostgrestError } from "@supabase/supabase-js";
 import { GenerationRunsRow } from "../schema";
-
 
 export async function hasRunForDate(date: string): Promise<boolean> {
 

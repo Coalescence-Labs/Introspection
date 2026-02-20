@@ -16,6 +16,10 @@ interface TodayPageClientProps {
   todayLabel?: string;
 }
 
+/**
+ * Today page UI: question hero, LLM selector, speech-friendly toggle, prompt preview, copy button.
+ * Keyboard: Arrow Left/Right (LLM), T (speech), C (copy). Regenerates prompt when question/LLM/speech change.
+ */
 export function TodayPageClient({ initialQuestion, todayLabel }: TodayPageClientProps) {
   const [selectedLLM, setSelectedLLM] = useState<LLMType>("claude");
   const [speechFriendly, setSpeechFriendly] = useState(false);

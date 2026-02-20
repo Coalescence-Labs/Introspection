@@ -10,6 +10,7 @@ const TOUCH_SECTION_THROTTLE_MS = 700;
 const TOUCH_MOVE_IGNORE_PX = 12;
 const IS_SCROLLING_RESET_MS = 700;
 
+/** Map scroll position to section index (0-based). Clamped to [0, count-1]. */
 function sectionFromScrollTop(scrollTop: number, sectionHeight: number, count: number): number {
   if (sectionHeight <= 0) return 0;
   const index = Math.round(scrollTop / sectionHeight);
@@ -17,8 +18,10 @@ function sectionFromScrollTop(scrollTop: number, sectionHeight: number, count: n
 }
 
 /**
- * Reforge-style scroll on desktop (wheel → one section, programmatic scroll).
- * On touch: use window scroll; sync currentSection from scrollY and snap on scroll end.
+ * Section-based scroll behavior for the welcome page.
+ * Desktop: wheel events advance one section; container scroll is driven by currentSection.
+ * Touch: native window scroll; currentSection synced from scrollY; swipe advances one section with throttle.
+ * Returns { currentSection, setCurrentSection, isScrolling } for UI and particle effects.
  */
 export function useCustomScroll(
   containerRef: RefObject<HTMLElement | null>,
@@ -35,6 +38,7 @@ export function useCustomScroll(
 
   currentSectionRef.current = currentSection;
 
+  /** Set isScrolling true and clear it after IS_SCROLLING_RESET_MS (for scroll-locked UI). */
   const markScrolling = () => {
     setIsScrolling(true);
     if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
@@ -50,7 +54,7 @@ export function useCustomScroll(
     };
   }, []);
 
-  // Desktop: programmatic scroll to current section
+  // Desktop: drive container scroll to currentSection (smooth scroll after short delay)
   useEffect(() => {
     if (touchMode) return;
     const container = containerRef.current;
@@ -67,7 +71,7 @@ export function useCustomScroll(
     return () => clearTimeout(id);
   }, [currentSection, containerRef, touchMode]);
 
-  // Desktop: sync currentSection from container scroll
+  // Desktop: keep currentSection in sync with container scroll position (throttled)
   useEffect(() => {
     if (touchMode) return;
     const container = containerRef.current;
@@ -84,7 +88,7 @@ export function useCustomScroll(
     return () => container.removeEventListener("scroll", throttledSync);
   }, [containerRef, itemCount, touchMode]);
 
-  // Touch: sync currentSection from window scroll (when we programmatically scroll)
+  // Touch: sync currentSection from window.scrollY (same logic as desktop but for window)
   useEffect(() => {
     if (!touchMode) return;
 
@@ -99,7 +103,7 @@ export function useCustomScroll(
     return () => window.removeEventListener("scroll", throttledSync);
   }, [itemCount, touchMode]);
 
-  // Touch: capture scroll like desktop — prevent native scroll, one section per swipe
+  // Touch: one section per swipe (prevent default on move; on end, advance by deltaY and scroll)
   useEffect(() => {
     if (!touchMode) return;
 
@@ -151,7 +155,7 @@ export function useCustomScroll(
     };
   }, [itemCount, touchMode]);
 
-  // Desktop: wheel → one section per tick
+  // Desktop: wheel events change currentSection (one section per throttled tick)
   useEffect(() => {
     if (touchMode) return;
     const container = containerRef.current;

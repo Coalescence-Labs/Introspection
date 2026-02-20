@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 
+/** Detects touch-capable device (touchstart, maxTouchPoints, or coarse pointer). Used for scroll mode on welcome page. */
 export function useTouchDevice(): boolean {
   const [touch, setTouch] = useState(false);
 

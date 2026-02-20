@@ -56,6 +56,10 @@ export type GenerateDailyQuestionOutput =
       runId?: string;
     };
 
+/**
+ * Call the LLM to generate a single daily question for the given date.
+ * Validates date; builds prompt with optional context; returns parsed schema or error with metrics.
+ */
 export async function generateDailyQuestion(input: GenerateDailyQuestionInput): Promise<GenerateDailyQuestionOutput> {
   const startTime = performance.now();
 
@@ -280,8 +284,8 @@ export async function generateQuestions(
 }
 
 /**
- * TODO: Add in further dynamic context on recent daily questions
- *
+ * Build the user prompt for the daily-question generator. Optional context (e.g. recent daily questions) is appended.
+ * Future: add more dynamic context (recent questions, diversity hints).
  */
 function buildUserPrompt(context?: string): string {
   let prompt = `Draft 3 candidates internally, pick the best, output only final JSON.`;
@@ -302,14 +306,14 @@ function buildUserPromptForBatch(count: number, context?: string): string {
   return prompt;
 }
 
-// Helper functions, TODO: Move to utils
+/** Current date in YYYY-MM-DD (ISO slice). Used by pipeline when no date is provided. */
 export function getCurrentDateString(): string {
   const today = new Date();
-  return today.toISOString().slice(0, 10); // "YYYY-MM-DD"
+  return today.toISOString().slice(0, 10);
 }
 
+/** Returns true if dateString is YYYY-MM-DD with valid calendar date (e.g. month 1–12, day valid for month/year). */
 export function validateDateString(dateString: string): boolean {
-  // Verify it is in proper structure YYYY-MM-DD
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateString)) return false;
   
   // Verify it is a valid date

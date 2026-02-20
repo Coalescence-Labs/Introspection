@@ -1,6 +1,7 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
+/** Merge Tailwind classes with clsx + tailwind-merge (handles conflicts and conditionals). */
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
@@ -27,7 +28,7 @@ export function getTodayString(): string {
 }
 
 /**
- * Get today's date in UI formatted way
+ * Get today's date formatted for UI display (e.g. "February 20").
  */
 export function getTodayLabel(): string {
   const now = new Date();

@@ -12,6 +12,7 @@ import {
   TodayConfigSelect,
 } from "./schema";
 
+/** Load question library from local content/questions module. Returns [] on failure. */
 async function loadQuestionsFromLocal(): Promise<Question[]> {
   try {
     const { questions } = await import("@/content/questions");
@@ -22,6 +23,7 @@ async function loadQuestionsFromLocal(): Promise<Question[]> {
   }
 }
 
+/** Load today override (question ID) from local content/today module. Returns null on failure. */
 async function loadTodayConfigFromLocal(): Promise<string | null> {
   try {
     const config = await import("@/content/today");
@@ -137,52 +139,42 @@ export async function getQuestionById(id: string): Promise<Question | undefined>
 }
 
 
-/************
- * 
- * IN PROGRESS
+/**
+ * Load the current daily question from Supabase (today_config + question + variants).
+ * Requires Supabase; on failure falls back to local questions with day-of-year rotation.
+ * Prefer getCachedDailyQuestion(dateKey) on the today page for cached, date-keyed results.
  */
 export async function getDailyQuestion(): Promise<Question> {
-  
   try {
-  const supabase = getSupabase();
-  if (!supabase) {
-    throw new Error("Supabase not initialized");
-  }
-  const { data, error } = await supabase
-    .from("today_config")
-    .select("today_question_id,question:today_question_id(*)")
-    .eq("id", 1)
-    .single();
+    const supabase = getSupabase();
+    if (!supabase) {
+      throw new Error("Supabase not initialized");
+    }
+    const { data, error } = await supabase
+      .from("today_config")
+      .select("today_question_id,question:today_question_id(*)")
+      .eq("id", 1)
+      .single();
 
-  if (error) throw error;
+    if (error) throw error;
 
-  const row = QuestionRow.parse(data.question);
-  if (!row) throw new Error("Question not found");
-  
-  // Try and get variants
-  const variants = await supabase.from("prompt_variants").select("*").eq("question_id", row.id);
-  if (variants.error) {
-    console.error("Failed to get variants from Supabase", variants.error);
-  }
+    const row = QuestionRow.parse(data.question);
+    if (!row) throw new Error("Question not found");
 
-  const variantRows = parseVariantRows(variants.data);
-  const mapped = mapQuestionsWithVariants([row], variantRows);
+    const variants = await supabase.from("prompt_variants").select("*").eq("question_id", row.id);
+    if (variants.error) {
+      console.error("Failed to get variants from Supabase", variants.error);
+    }
 
-  const validated = Question.parse( mapped[0] );
+    const variantRows = parseVariantRows(variants.data);
+    const mapped = mapQuestionsWithVariants([row], variantRows);
 
-  return validated;
-
-} catch (error) {
+    return Question.parse(mapped[0]);
+  } catch (error) {
     console.error("Failed to get daily question from Supabase", error);
-
-
-
     const questions = await loadQuestionsFromLocal();
-    // Select random question deterministically based on date
     const date = new Date();
     const dayOfYear = Math.floor(date.getTime() / (1000 * 60 * 60 * 24));
-    const question = questions[dayOfYear % questions.length];
-    return question;
-}
-
+    return questions[dayOfYear % questions.length];
+  }
 }

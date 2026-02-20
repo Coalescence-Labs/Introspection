@@ -13,6 +13,7 @@ interface PreviewPageClientProps {
   todayLabel: string;
 }
 
+/** Dev-only: shows today's question and generated prompts for all LLMs. Redirects to / in production. */
 export function PreviewPageClient({ initialQuestion, todayLabel }: PreviewPageClientProps) {
   const [prompts, setPrompts] = useState<Record<LLMType, { title: string; fullPrompt: string }>>(
     {} as Record<LLMType, { title: string; fullPrompt: string }>

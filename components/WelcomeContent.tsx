@@ -12,6 +12,10 @@ type WelcomeContentProps = {
   touchMode: boolean;
 };
 
+/**
+ * Renders welcome sections; on desktop uses containerRef for scroll container (useCustomScroll),
+ * on touch uses native window scroll and a simple main wrapper.
+ */
 export function WelcomeContent({ containerRef, touchMode }: WelcomeContentProps) {
   const { currentSection } = useWelcomeScroll();
 

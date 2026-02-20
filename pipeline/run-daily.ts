@@ -1,3 +1,9 @@
+/**
+ * Daily question pipeline: generate one question for a date via LLM, insert into Supabase, set as today.
+ * Usage: bun run pipeline/run-daily.ts [YYYY-MM-DD]. Omit date to use today.
+ * Requires SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, and LLM gateway env (e.g. AI gateway key).
+ */
+
 import { QuestionFeaturedHistory } from "@/lib/content/schema";
 import { generateDailyQuestion, type GenerateDailyQuestionOutput, getCurrentDateString, validateDateString } from "./lib/llm";
 import { getRecentDailyQuestions, getRunByDate, hasRunForDate, insertGeneratedQuestion, recordRunResult, recordRunStart, setDailyQuestion } from "./lib/supabase/queries";

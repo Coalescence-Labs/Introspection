@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * GPU-accelerated particle background for the welcome page.
+ * Uses Three.js + GPUComputationRenderer for position/velocity simulation;
+ * particles spring to home positions, react to mouse, and respond to scroll section (repel/attract).
+ * Device tier (mobile/tablet/desktop) adjusts count, FPS, and pixel ratio for performance.
+ */
+
 import { useEffect, useRef } from "react";
 import { useWelcomeScroll } from "@/lib/contexts/welcome-scroll-context";
 import { welcomeSections } from "@/components/welcome-sections";
@@ -16,6 +23,7 @@ type ParticleFieldProps = {
 
 type DeviceTier = "mobile" | "tablet" | "desktop";
 
+/** Classify device for performance tuning (particle count, FPS cap, pixel ratio). */
 function getDeviceTier(): DeviceTier {
   const ua = navigator.userAgent.toLowerCase();
   const hasTouch = navigator.maxTouchPoints > 1;
@@ -31,6 +39,7 @@ function getDeviceTier(): DeviceTier {
   return "desktop";
 }
 
+/** Default particle count, FPS, point size, and pixel ratio cap per device tier. */
 function getTierDefaults(tier: DeviceTier) {
   switch (tier) {
     case "mobile":
@@ -174,6 +183,10 @@ void main() {
 }
 `;
 
+/**
+ * Full-screen particle field behind the welcome sections.
+ * Props are optional; defaults are tier-based. Uniforms (repel/attract, mouse) are updated from scroll context.
+ */
 export function ParticleField({
   count,
   pointSize,
@@ -220,6 +233,7 @@ export function ParticleField({
 
     const gpuCompute = new GPUComputationRenderer(sizeX, sizeY, renderer);
 
+    /** Add organic distortion to initial positions (avoids a perfect rectangle). */
     const crumple = (x: number, y: number, amp: number) => ({
       x: (Math.sin(x * 1.7) * Math.cos(y * 2.1) + Math.sin(x * 3.2 + y * 1.4) * 0.6) * amp,
       y: (Math.cos(x * 2.1) * Math.sin(y * 1.7) + Math.cos(x * 1.4 - y * 3.2) * 0.6) * amp,

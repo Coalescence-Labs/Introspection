@@ -9,6 +9,10 @@ import { useCustomScroll } from "@/lib/hooks/useCustomScroll";
 import { useTouchDevice } from "@/lib/hooks/useTouchDevice";
 import { welcomeSections } from "@/components/welcome-sections";
 
+/**
+ * Welcome (landing) page: particle background, section-based scroll, theme toggle.
+ * Provides WelcomeScrollContext (currentSection, isScrolling) to children.
+ */
 export function WelcomePageShell() {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const touchMode = useTouchDevice();

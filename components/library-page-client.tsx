@@ -22,6 +22,9 @@ interface LibraryPageClientProps {
   questions: Question[];
 }
 
+/**
+ * Library page: filter by category, grid of question cards. Each card shows prompt preview and copy for selected LLM.
+ */
 export function LibraryPageClient({ questions }: LibraryPageClientProps) {
   const [selectedCategory, setSelectedCategory] = useState<QuestionCategory | "all">("all");
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
