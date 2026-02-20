@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { headers } from "next/headers";
+import { connection } from "next/server";
 import { cacheLife, cacheTag } from "next/cache";
 import { TodayPageShell, TodayQuestionBlock } from "@/components/today-page-client";
 import { getCachedQuestions, loadTodayConfig } from "@/lib/content/loader";
@@ -23,7 +23,7 @@ async function getCachedDailyQuestion(dateKey: string) {
 
 /** Fetches the daily question; runs inside Suspense so the shell can render instantly. */
 async function TodayQuestionContent() {
-  await headers();
+  await connection();
   const todayQuestion = await getCachedDailyQuestion(getTodayString());
   return <TodayQuestionBlock initialQuestion={todayQuestion} />;
 }
