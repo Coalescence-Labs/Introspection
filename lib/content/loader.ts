@@ -1,5 +1,6 @@
 "use server";
 
+import { cacheLife, cacheTag } from "next/cache";
 import { getSupabase } from "@/lib/supabase/server";
 import { mapQuestionsWithVariants } from "./map-supabase";
 import { Question } from "./schema";
@@ -67,6 +68,17 @@ export async function loadQuestions(): Promise<Question[]> {
     console.error("Failed to load questions from Supabase", error);
     return loadQuestionsFromLocal();
   }
+}
+
+/**
+ * Cached question list shared by today and library pages.
+ * Revalidate every hour so both pages benefit from one cache.
+ */
+export async function getCachedQuestions(): Promise<Question[]> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("questions");
+  return loadQuestions();
 }
 
 /**

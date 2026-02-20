@@ -1,9 +1,7 @@
 import { LibraryPageClient } from "@/components/library-page-client";
-import { loadQuestions } from "@/lib/content/loader";
-
-export const dynamic = "force-dynamic";
+import { getCachedQuestions } from "@/lib/content/loader";
 
 export default async function LibraryPage() {
-  const questions = await loadQuestions();
+  const questions = await getCachedQuestions();
   return <LibraryPageClient questions={questions} />;
 }

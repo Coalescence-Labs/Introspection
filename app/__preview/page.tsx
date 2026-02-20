@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { PreviewPageClient } from "@/components/preview-page-client";
 import { loadQuestions, loadTodayConfig } from "@/lib/content/loader";
 import { getTodayQuestion } from "@/lib/content/rotation";
@@ -6,6 +7,10 @@ import { getTodayString } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 
 export default async function PreviewPage() {
+  if (process.env.NODE_ENV === "production") {
+    redirect("/");
+  }
+
   const questions = await loadQuestions();
   const todayConfig = await loadTodayConfig();
 
