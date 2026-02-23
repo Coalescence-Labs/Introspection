@@ -13,7 +13,8 @@
     "test:ui": "playwright test --ui",
     "pipeline:validate": "bun run pipeline/validate-content.ts",
     "pipeline:generate": "bun run pipeline/generate-stub.ts",
-    "pipeline:seed": "bun run pipeline/seed-supabase.ts"
+    "pipeline:seed": "bun run pipeline/seed-supabase.ts",
+    "pipeline:questions": "bun run pipeline/question-shell.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.3",
