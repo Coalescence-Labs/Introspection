@@ -3,6 +3,7 @@ import { Commissioner } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
 import { ThemeProvider } from "next-themes";
+import { Analytics } from "@vercel/analytics/next"
 
 const satoshi = localFont({
   src: [
@@ -41,6 +42,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-smooth" suppressHydrationWarning>
       <body className={`${satoshi.variable} ${commissioner.variable}`}>
+        <Analytics />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
