@@ -2,8 +2,9 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Copy } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useCopy } from "@/lib/hooks/useCopy";
 
 interface CopyIconButtonProps {
   text: string;
@@ -59,53 +60,9 @@ export function CopyIconButton({
   onCopy,
   className,
 }: React.ComponentProps<"div"> & CopyIconButtonProps) {
-  const [copied, setCopied] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
 
-  // Auto-reset after 1.5s
-  useEffect(() => {
-    if (copied) {
-      const timer = setTimeout(() => setCopied(false), 1500);
-      return () => clearTimeout(timer);
-    }
-  }, [copied]);
-
-  // Reset copied state when text changes (different prompt being copied)
-  // biome-ignore lint/correctness/useExhaustiveDependencies: text dependency is intentional
-  useEffect(() => {
-    setCopied(false);
-  }, [text]);
-
-  const handleCopy = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
-        setCopied(true);
-        onCopy?.();
-      } else {
-        const textArea = document.createElement("textarea");
-        textArea.value = text;
-        textArea.style.position = "fixed";
-        textArea.style.left = "-999999px";
-        textArea.style.top = "-999999px";
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-
-        const success = document.execCommand("copy");
-        document.body.removeChild(textArea);
-
-        if (success) {
-          setCopied(true);
-          onCopy?.();
-        }
-      }
-    } catch (error) {
-      console.error("Failed to copy:", error);
-    }
-  };
+  const { copied, handleCopy } = useCopy({ text, onCopy });
 
   return (
     <div className="relative">

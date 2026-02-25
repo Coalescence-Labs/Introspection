@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Copy } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCopy } from "@/lib/hooks/useCopy";
 import { Button } from "@/components/ui/button";
 
 // Corner sparkle components for success animation
@@ -56,57 +56,7 @@ interface CopyButtonProps {
 }
 
 export function CopyButton({ text, onCopy, disabled }: CopyButtonProps) {
-  const [copied, setCopied] = useState(false);
-
-  // Auto-reset after 1.5s
-  useEffect(() => {
-    if (copied) {
-      const timer = setTimeout(() => setCopied(false), 1500);
-      return () => clearTimeout(timer);
-    }
-  }, [copied]);
-
-  // Reset copied state when text changes (new prompt being copied)
-  // biome-ignore lint/correctness/useExhaustiveDependencies: text dependency is intentional
-  useEffect(() => {
-    setCopied(false);
-  }, [text]);
-
-  const handleCopy = async () => {
-    if (disabled || !text) return;
-    try {
-      // Try the modern clipboard API first
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
-        setCopied(true);
-        onCopy?.();
-      } else {
-        // Fallback for older browsers or insecure contexts
-        const textArea = document.createElement("textarea");
-        textArea.value = text;
-        textArea.style.position = "fixed";
-        textArea.style.left = "-999999px";
-        textArea.style.top = "-999999px";
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-
-        const success = document.execCommand("copy");
-        document.body.removeChild(textArea);
-
-        if (success) {
-          setCopied(true);
-          onCopy?.();
-        } else {
-          throw new Error("Copy command failed");
-        }
-      }
-    } catch (error) {
-      console.error("Failed to copy:", error);
-      // Show error to user
-      alert("Failed to copy to clipboard. Please try selecting and copying the text manually.");
-    }
-  };
+  const { copied, handleCopy } = useCopy({ text, onCopy });
 
   return (
     <div className="relative">
