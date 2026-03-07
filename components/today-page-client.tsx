@@ -5,13 +5,9 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { CopyButton } from "@/components/copy-button";
 import { LLMSelector } from "@/components/llm-selector";
 import { PromptPreview } from "@/components/prompt-preview";
-import { QuestionHero } from "@/components/question-hero";
 import { SpeechToggle } from "@/components/speech-toggle";
-import { ThemeToggle } from "@/components/theme-toggle";
-import type { LLMType, Question } from "@/lib/content/schema";
-import { generatePrompt } from "@/lib/prompt/engine";
+import type { LLMType } from "@/lib/content/schema";
 import type { GeneratedPrompt } from "@/lib/prompt/types";
-import { getTodayString } from "@/lib/utils";
 
 interface TodayPageContextValue {
   selectedLLM: LLMType;
@@ -24,22 +20,23 @@ interface TodayPageContextValue {
 
 const TodayPageContext = createContext<TodayPageContextValue | null>(null);
 
-function useTodayPage() {
+export function useTodayPage() {
   const ctx = useContext(TodayPageContext);
   if (!ctx) throw new Error("useTodayPage must be used within TodayPageShell");
   return ctx;
 }
 
-/** Shell: header, LLM selector, speech toggle, copy button. Renders instantly; question-dependent content is in children (Suspense). */
-export function TodayPageShell({ children }: { children: React.ReactNode }) {
+/** Client island: context, section (header + Suspense slot + controls), prompt preview below section. */
+export function TodayPageShell({
+  todayLabel,
+  children,
+}: {
+  todayLabel: string;
+  children: React.ReactNode;
+}) {
   const [selectedLLM, setSelectedLLM] = useState<LLMType>("claude");
   const [speechFriendly, setSpeechFriendly] = useState(false);
   const [prompt, setPrompt] = useState<GeneratedPrompt | null>(null);
-  // Avoid new Date() in Server Components: compute date label only on the client after mount
-  const [todayLabel, setTodayLabel] = useState<string | null>(null);
-  useEffect(() => {
-    setTodayLabel(getTodayString());
-  }, []);
 
   const value: TodayPageContextValue = {
     selectedLLM,
@@ -50,7 +47,6 @@ export function TodayPageShell({ children }: { children: React.ReactNode }) {
     setPrompt,
   };
 
-  // Keyboard shortcuts (prompt from context; copy no-op when null)
   useEffect(() => {
     const llms: LLMType[] = ["claude", "chatgpt", "gemini", "perplexity"];
 
@@ -88,87 +84,36 @@ export function TodayPageShell({ children }: { children: React.ReactNode }) {
 
   return (
     <TodayPageContext.Provider value={value}>
-      <main className="mx-auto max-w-5xl px-6 flex flex-col gap-20">
-        <section className="flex flex-col py-16 sm:py-20" style={{ height: "100dvh" }}>
-          {/* Header - instant */}
-          <div className="mb-16 sm:mb-20 flex items-center justify-between">
-            <div className="text-xs text-muted-foreground">
-              Daily Question{todayLabel ? ` • ${todayLabel}` : ""}
-            </div>
-            <Link
-              href="/library"
-              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-              tabIndex={0}
-            >
-              Browse all questions →
-            </Link>
+      <section className="flex flex-col py-16 sm:py-20" style={{ height: "100dvh" }}>
+        <div className="mb-16 sm:mb-20 flex items-center justify-between">
+          <div className="text-xs text-muted-foreground">Daily Question • {todayLabel}</div>
+          <Link
+            href="/library"
+            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+            tabIndex={0}
+          >
+            Browse all questions →
+          </Link>
+        </div>
+        {children}
+        <div>
+          <div className="mb-10">
+            <LLMSelector selected={selectedLLM} onSelect={setSelectedLLM} />
           </div>
-
-          {/* Question hero + preview: inside Suspense (children) */}
-          {children}
-
-          {/* LLM Selector - instant */}
-          <div>
-            <div className="mb-10">
-              <LLMSelector selected={selectedLLM} onSelect={setSelectedLLM} />
-            </div>
-
-            <div className="mb-10">
-              <SpeechToggle enabled={speechFriendly} onToggle={setSpeechFriendly} />
-            </div>
+          <div className="mb-10">
+            <SpeechToggle enabled={speechFriendly} onToggle={setSpeechFriendly} />
           </div>
-
-          <div className="flex justify-center justify-self-end">
-            <CopyButton
-              text={prompt?.fullPrompt ?? ""}
-              disabled={!prompt}
-            />
-          </div>
-
-          <div className="flex-1" />
-        </section>
-
-        {/* Prompt preview - only when we have prompt (rendered by QuestionBlock below the fold) */}
-        {prompt && (
-          <div className="pb-12">
-            <PromptPreview title={prompt.title} fullPrompt={prompt.fullPrompt} />
-          </div>
-        )}
-
-        <footer className="pb-16 text-center text-xs text-muted-foreground">
-          <div className="mb-4 flex justify-center">
-            <ThemeToggle tabIndex={0} />
-          </div>
-          <p>Introspection - Reflect on your AI conversations</p>
-        </footer>
-      </main>
+        </div>
+        <div className="flex justify-center justify-self-end">
+          <CopyButton text={prompt?.fullPrompt ?? ""} disabled={!prompt} />
+        </div>
+        <div className="flex-1" />
+      </section>
+      {prompt && (
+        <div className="pb-12">
+          <PromptPreview title={prompt.title} fullPrompt={prompt.fullPrompt} />
+        </div>
+      )}
     </TodayPageContext.Provider>
-  );
-}
-
-/**
- * Rendered inside Suspense after the question loads. Fills context with generated prompt and shows hero + preview.
- */
-export function TodayQuestionBlock({ initialQuestion }: { initialQuestion: Question }) {
-  const { selectedLLM, speechFriendly, setPrompt } = useTodayPage();
-  const [generatedPrompt, setGeneratedPrompt] = useState(() =>
-    generatePrompt(initialQuestion, { llm: selectedLLM, speechFriendly })
-  );
-
-  useEffect(() => {
-    const next = generatePrompt(initialQuestion, {
-      llm: selectedLLM,
-      speechFriendly,
-    });
-    setGeneratedPrompt(next);
-    setPrompt(next);
-  }, [initialQuestion, selectedLLM, speechFriendly, setPrompt]);
-
-  return (
-    <>
-      <div className="mb-16 sm:mb-20 flex-1">
-        <QuestionHero question={initialQuestion.simple_text} />
-      </div>
-    </>
   );
 }

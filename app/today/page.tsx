@@ -1,10 +1,11 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { cacheLife, cacheTag } from "next/cache";
-import { TodayPageShell, TodayQuestionBlock } from "@/components/today-page-client";
+import { TodayPageLayout } from "@/components/today-page-layout";
+import { TodayQuestionBlock } from "@/components/today-question-block";
 import { getCachedQuestions, loadTodayConfig } from "@/lib/content/loader";
 import { getTodayQuestion } from "@/lib/content/rotation";
-import { getTodayString } from "@/lib/utils";
+import { getTodayLabel, getTodayString } from "@/lib/utils";
 
 /**
  * Returns the daily question for the given date. Cached per calendar day (dateKey)
@@ -14,8 +15,10 @@ async function getCachedDailyQuestion(dateKey: string) {
   "use cache";
   cacheLife("days");
   cacheTag("daily-question");
-  const questions = await getCachedQuestions();
-  const todayConfig = await loadTodayConfig();
+  const [questions, todayConfig] = await Promise.all([
+    getCachedQuestions(),
+    loadTodayConfig(),
+  ]);
   return todayConfig
     ? (questions.find((q) => q.id === todayConfig) ?? getTodayQuestion(questions))
     : getTodayQuestion(questions);
@@ -37,13 +40,38 @@ function TodayQuestionFallback() {
   );
 }
 
-/** Today's question page. Shell (header, LLM, speech, copy) shows immediately; question loads in Suspense. */
-export default function TodayPage() {
+/** Async shell: fetches request-bound data (connection + date) then renders layout with server-computed label. */
+async function TodayPageWithLabel() {
+  await connection();
+  const todayLabel = getTodayLabel();
   return (
-    <TodayPageShell>
+    <TodayPageLayout todayLabel={todayLabel}>
       <Suspense fallback={<TodayQuestionFallback />}>
         <TodayQuestionContent />
       </Suspense>
-    </TodayPageShell>
+    </TodayPageLayout>
+  );
+}
+
+/** Fallback while shell (including date label) is loading. */
+function TodayShellFallback() {
+  return (
+    <main className="mx-auto max-w-5xl px-6 flex flex-col gap-20">
+      <section className="flex flex-col py-16 sm:py-20" style={{ height: "100dvh" }}>
+        <div className="mb-16 sm:mb-20 flex items-center justify-between">
+          <div className="text-xs text-muted-foreground">Daily Question</div>
+        </div>
+        <TodayQuestionFallback />
+      </section>
+    </main>
+  );
+}
+
+/** Today's question page. Shell (with label) and question load in Suspense. */
+export default function TodayPage() {
+  return (
+    <Suspense fallback={<TodayShellFallback />}>
+      <TodayPageWithLabel />
+    </Suspense>
   );
 }
