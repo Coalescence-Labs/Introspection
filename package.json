@@ -1,6 +1,6 @@
 {
   "name": "introspection",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -18,36 +18,36 @@
     "pipeline:questions": "bun run pipeline/question-shell.ts"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.3",
-    "@happy-dom/global-registrator": "^20.7.0",
+    "@biomejs/biome": "^2.4.6",
+    "@happy-dom/global-registrator": "^20.8.3",
     "@playwright/test": "^1.58.2",
-    "@tailwindcss/postcss": "^4.2.0",
+    "@tailwindcss/postcss": "^4.2.1",
     "@tailwindcss/typography": "^0.5.19",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
     "@types/bun": "latest",
-    "@types/node": "^25.3.0",
+    "@types/node": "^25.3.5",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@types/three": "^0.182.0",
-    "autoprefixer": "^10.4.24",
-    "happy-dom": "^20.7.0",
+    "autoprefixer": "^10.4.27",
+    "happy-dom": "^20.8.3",
     "playwright": "^1.58.2",
-    "postcss": "^8.5.6",
-    "tailwindcss": "^4.2.0"
+    "postcss": "^8.5.8",
+    "tailwindcss": "^4.2.1"
   },
   "peerDependencies": {
     "typescript": "^5.9.3"
   },
   "dependencies": {
     "@radix-ui/react-switch": "^1.2.6",
-    "@supabase/supabase-js": "^2.97.0",
+    "@supabase/supabase-js": "^2.98.0",
     "@vercel/analytics": "^1.6.1",
-    "ai": "^6.0.94",
+    "ai": "^6.0.116",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dotenv": "^17.3.1",
-    "framer-motion": "^12.34.2",
+    "framer-motion": "^12.35.1",
     "lucide-react": "^0.563.0",
     "next": "^16.1.6",
     "next-themes": "^0.4.6",
