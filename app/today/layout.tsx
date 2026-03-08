@@ -1,19 +1,20 @@
+import { connection } from "next/server";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { TodayPageShell } from "@/components/today-page-client";
+import { getTodayLabel } from "@/lib/utils";
 
-interface TodayPageLayoutProps {
-  /** Display date for the header (e.g. "March 7"); computed on the server after connection(). */
-  todayLabel: string;
-  /** Typically the Suspense boundary that wraps TodayQuestionContent (hero + question block). */
+interface TodayLayoutProps {
   children: React.ReactNode;
 }
 
 /**
- * Server-rendered layout for the Today page: main wrapper, client island (TodayPageShell with
- * section, controls, prompt preview), and footer with theme toggle. Keeps the client boundary
- * small and leaves static structure on the server.
+ * Route layout for `/today`: computes the request-bound date label on the server,
+ * renders the shared page shell, and leaves the question content to the page.
  */
-export function TodayPageLayout({ todayLabel, children }: TodayPageLayoutProps) {
+export default async function TodayLayout({ children }: TodayLayoutProps) {
+  await connection();
+  const todayLabel = getTodayLabel();
+
   return (
     <main className="mx-auto max-w-5xl px-6 flex flex-col gap-20">
       <TodayPageShell todayLabel={todayLabel}>{children}</TodayPageShell>
