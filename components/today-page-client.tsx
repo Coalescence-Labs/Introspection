@@ -9,6 +9,7 @@ import { SpeechToggle } from "@/components/speech-toggle";
 import type { LLMType } from "@/lib/content/schema";
 import type { GeneratedPrompt } from "@/lib/prompt/types";
 
+/** Shared state for the Today page: LLM choice, speech-friendly toggle, and current prompt (set by TodayQuestionBlock). */
 interface TodayPageContextValue {
   selectedLLM: LLMType;
   setSelectedLLM: (llm: LLMType) => void;
@@ -20,13 +21,17 @@ interface TodayPageContextValue {
 
 const TodayPageContext = createContext<TodayPageContextValue | null>(null);
 
+/** Hook to read/update today page state. Must be used inside TodayPageShell. */
 export function useTodayPage() {
   const ctx = useContext(TodayPageContext);
   if (!ctx) throw new Error("useTodayPage must be used within TodayPageShell");
   return ctx;
 }
 
-/** Client island: context, section (header + Suspense slot + controls), prompt preview below section. */
+/**
+ * Client island for the Today page: header (with server-provided todayLabel), Suspense children slot
+ * (hero + question block), LLM selector, speech toggle, copy button, and expandable prompt preview below the fold.
+ */
 export function TodayPageShell({
   todayLabel,
   children,
@@ -47,6 +52,7 @@ export function TodayPageShell({
     setPrompt,
   };
 
+  // Global shortcuts: Arrow keys cycle LLM, T toggles speech-friendly, C copies prompt (when available).
   useEffect(() => {
     const llms: LLMType[] = ["claude", "chatgpt", "gemini", "perplexity"];
 
@@ -85,6 +91,7 @@ export function TodayPageShell({
   return (
     <TodayPageContext.Provider value={value}>
       <section className="flex flex-col py-16 sm:py-20" style={{ height: "100dvh" }}>
+        {/* Header: date label (from server) and link to library. */}
         <div className="mb-16 sm:mb-20 flex items-center justify-between">
           <div className="text-xs text-muted-foreground">Daily Question • {todayLabel}</div>
           <Link
@@ -96,6 +103,7 @@ export function TodayPageShell({
           </Link>
         </div>
         {children}
+        {/* Controls: LLM selector, speech-friendly toggle, copy button. */}
         <div>
           <div className="mb-10">
             <LLMSelector selected={selectedLLM} onSelect={setSelectedLLM} />
@@ -109,6 +117,7 @@ export function TodayPageShell({
         </div>
         <div className="flex-1" />
       </section>
+      {/* Expandable prompt preview below the 100dvh section; only when prompt is set by question block. */}
       {prompt && (
         <div className="pb-12">
           <PromptPreview title={prompt.title} fullPrompt={prompt.fullPrompt} />

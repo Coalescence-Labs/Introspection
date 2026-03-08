@@ -4,6 +4,7 @@ interface QuestionHeroProps {
   question: string;
 }
 
+/** Large, centered question text with a CSS entrance animation (0.6s). Server component; no client JS. */
 export function QuestionHero({ question }: QuestionHeroProps) {
   return (
     <div

@@ -7,7 +7,10 @@ import { generatePrompt } from "@/lib/prompt/engine";
 import { useTodayPage } from "@/components/today-page-client";
 
 /**
- * Rendered inside Suspense after the question loads. Fills context with generated prompt and shows hero.
+ * Rendered inside Suspense after the daily question is loaded. Renders the question hero and
+ * syncs the generated prompt (for the current LLM and speech-friendly setting) into Today page
+ * context so the copy button and prompt preview can use it. useLayoutEffect ensures the shell
+ * has the prompt before first paint and avoids an extra render.
  */
 export function TodayQuestionBlock({ initialQuestion }: { initialQuestion: Question }) {
   const { selectedLLM, speechFriendly, setPrompt } = useTodayPage();

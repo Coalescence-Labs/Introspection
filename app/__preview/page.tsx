@@ -6,13 +6,13 @@ import { getTodayString } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
+/** Dev-only preview: today's question and generated prompts for all LLMs. Redirects to / in production. */
 export default async function PreviewPage() {
   if (process.env.NODE_ENV === "production") {
     redirect("/");
   }
 
-  const questions = await loadQuestions();
-  const todayConfig = await loadTodayConfig();
+  const [questions, todayConfig] = await Promise.all([loadQuestions(), loadTodayConfig()]);
 
   const todayQuestion = todayConfig
     ? (questions.find((q) => q.id === todayConfig) ?? getTodayQuestion(questions))

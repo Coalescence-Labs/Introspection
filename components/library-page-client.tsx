@@ -2,13 +2,14 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { CopyIconButton } from "@/components/copy-icon-button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { LLMType, Question, QuestionCategory } from "@/lib/content/schema";
 import { generatePrompt } from "@/lib/prompt/engine";
 
+/** Display labels for each question category in the library filter. */
 const categoryLabels: Record<QuestionCategory, string> = {
   career: "Career & Growth",
   ideas: "Ideas & Creativity",
@@ -18,31 +19,61 @@ const categoryLabels: Record<QuestionCategory, string> = {
   reflection: "Reflection & Growth",
 };
 
+type SelectedCategory = QuestionCategory | "all";
+
 interface LibraryPageClientProps {
   questions: Question[];
 }
 
+/** Ordered list of category keys for consistent filter and section order. */
+const categories = Object.keys(categoryLabels) as QuestionCategory[];
+
 /**
- * Library page: filter by category, grid of question cards. Each card shows prompt preview and copy for selected LLM.
+ * Library page: browse all questions with category filters.
+ * Renders a filter bar (All + per-category) and a grid of question cards. Each card
+ * shows the question text, tags, and a copy button that copies the LLM-optimized prompt.
+ * Prompts are memoized per filtered set so hover/focus don't trigger full recompute.
  */
 export function LibraryPageClient({ questions }: LibraryPageClientProps) {
-  const [selectedCategory, setSelectedCategory] = useState<QuestionCategory | "all">("all");
+  const [selectedCategory, setSelectedCategory] = useState<SelectedCategory>("all");
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
-  const [selectedLLM] = useState<LLMType>("claude");
+  const selectedLLM: LLMType = "claude";
 
-  const categories = Object.keys(categoryLabels) as QuestionCategory[];
+  /** Questions to show: all or filtered by selected category. */
+  const filteredQuestions = useMemo(
+    () =>
+      selectedCategory === "all"
+        ? questions
+        : questions.filter((q) => q.category === selectedCategory),
+    [questions, selectedCategory]
+  );
 
-  const filteredQuestions =
-    selectedCategory === "all"
-      ? questions
-      : questions.filter((q) => q.category === selectedCategory);
+  /** Group filtered questions by category for sectioned rendering. */
+  const questionsByCategory = useMemo(
+    () =>
+      categories.reduce(
+        (acc, category) => {
+          acc[category] = filteredQuestions.filter((q) => q.category === category);
+          return acc;
+        },
+        {} as Record<QuestionCategory, Question[]>
+      ),
+    [filteredQuestions]
+  );
 
-  const questionsByCategory = categories.reduce(
-    (acc, category) => {
-      acc[category] = filteredQuestions.filter((q) => q.category === category);
-      return acc;
-    },
-    {} as Record<QuestionCategory, Question[]>
+  /** Precomputed prompts for the current filter; avoids calling generatePrompt on every hover. */
+  const promptsByQuestionId = useMemo(
+    () =>
+      new Map(
+        filteredQuestions.map((question) => [
+          question.id,
+          generatePrompt(question, {
+            llm: selectedLLM,
+            speechFriendly: false,
+          }),
+        ])
+      ),
+    [filteredQuestions, selectedLLM]
   );
 
   return (
@@ -61,15 +92,18 @@ export function LibraryPageClient({ questions }: LibraryPageClientProps) {
         </p>
       </div>
 
+      {/* Category filter: All + one button per category; aria-pressed for screen readers. */}
       <div className="mb-12 flex flex-wrap gap-2">
         <button
           onClick={() => setSelectedCategory("all")}
-          className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${selectedCategory === "all"
+          className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+            selectedCategory === "all"
               ? "bg-accent text-accent-foreground"
               : "bg-secondary text-secondary-foreground hover:bg-accent/10"
-            }`}
+          }`}
           type="button"
           tabIndex={0}
+          aria-pressed={selectedCategory === "all"}
         >
           All
         </button>
@@ -77,18 +111,21 @@ export function LibraryPageClient({ questions }: LibraryPageClientProps) {
           <button
             key={category}
             onClick={() => setSelectedCategory(category)}
-            className={`rounded-full px-4 py-2 cursor-pointer text-sm font-medium transition-colors ${selectedCategory === category
+            className={`rounded-full px-4 py-2 cursor-pointer text-sm font-medium transition-colors ${
+              selectedCategory === category
                 ? "bg-accent text-accent-foreground"
                 : "bg-secondary text-secondary-foreground hover:bg-accent/10"
-              }`}
+            }`}
             type="button"
             tabIndex={0}
+            aria-pressed={selectedCategory === category}
           >
             {categoryLabels[category]}
           </button>
         ))}
       </div>
 
+      {/* Sections per category; only categories with questions in the current filter are shown. */}
       <div className="space-y-16">
         {categories.map((category) => {
           const categoryQuestions = questionsByCategory[category];
@@ -105,10 +142,8 @@ export function LibraryPageClient({ questions }: LibraryPageClientProps) {
               <div className="space-y-3">
                 {categoryQuestions.map((question) => {
                   const isHovered = hoveredCard === question.id;
-                  const prompt = generatePrompt(question, {
-                    llm: selectedLLM,
-                    speechFriendly: false,
-                  });
+                  const prompt = promptsByQuestionId.get(question.id);
+                  if (!prompt) return null;
 
                   return (
                     <motion.div
@@ -161,7 +196,7 @@ export function LibraryPageClient({ questions }: LibraryPageClientProps) {
 
       <footer className="mt-20 text-center text-xs text-muted-foreground">
         <div className="mb-4 flex justify-center">
-          <ThemeToggle />
+          <ThemeToggle aria-label="Toggle theme" />
         </div>
         <p>{questions.length} questions available</p>
       </footer>
