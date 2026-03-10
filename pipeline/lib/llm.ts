@@ -1,6 +1,13 @@
-import { GatewayModelId, generateText, Output, NoObjectGeneratedError } from "ai";
+import { GatewayModelId, generateText, Output } from "ai";
 import { LLMGeneratedDailyQuestion, LLMGeneratedDailyQuestionArray } from "./schema";
 import { DAILY_GENERATOR_PROMPT, EXPANSIVE_GENERATOR_PROMPT } from "./prompts";
+import {
+  executeLlmCall,
+  type LlmCallFailure,
+  type LlmCallResult,
+  type LlmCallSuccess,
+  type LlmPerformanceMetrics,
+} from "./llm-metrics";
 
 const DEFAULT_MODEL: GatewayModelId = "openai/gpt-5.2"
 
@@ -12,49 +19,11 @@ interface GenerateDailyQuestionInput {
   context?: string;
 }
 
-type ErrorType = "invalid_input" | "model_error" | "rate_limit_exceeded" | "internal_error" | "unknown";
-
-type PerformanceMetrics = {
-  latencyMs?: number;
-  inputValidationLatencyMs?: number;
-  promptGenerationLatencyMs?: number;
-}
-
-type UsageMetrics = {
-  promptTokens?: number;
-  completionTokens?: number;
-  totalTokens?: number;
-  cost?: number;
-}
-
 export type GenerateDailyQuestionOutput =
-  | {
-      ok: true;
-      data: LLMGeneratedDailyQuestion;
+  | (LlmCallSuccess<LLMGeneratedDailyQuestion> & {
       dateGeneratedFor: string;
-      rawText?: string;
-      modelId?: GatewayModelId;
-      performanceMetrics?: PerformanceMetrics;
-      usage?: UsageMetrics;
-      runId?: string;
-    }
-  | {
-      ok: false;
-      data: null;
-      rawText?: string;
-      modelId?: GatewayModelId;
-      performanceMetrics?: PerformanceMetrics;
-      usage?: UsageMetrics;
-      error: {
-        message: string;
-        type: ErrorType;
-        code?: number;
-        param?: string;
-        value?: string;
-        raw_error?: unknown;
-      };
-      runId?: string;
-    };
+    })
+  | LlmCallFailure;
 
 /**
  * Call the LLM to generate a single daily question for the given date.
@@ -93,84 +62,43 @@ export async function generateDailyQuestion(input: GenerateDailyQuestionInput): 
   const endPromptGeneration = performance.now();
 
   const promptGenerationLatencyMs = endPromptGeneration - startPromptGeneration;
+  const performanceMetrics: Omit<LlmPerformanceMetrics, "latencyMs"> = {
+    inputValidationLatencyMs,
+    promptGenerationLatencyMs,
+  };
 
-  try {
-    const startLLMCall = performance.now();
-    const llmResponse = await generateText({
-      model: modelId,
-      system: DAILY_GENERATOR_PROMPT,
-      prompt: userPrompt,
-      maxOutputTokens: 1200,
-      output: Output.object({ schema: LLMGeneratedDailyQuestion }),
-      temperature: 0.9,
-      presencePenalty: 0.6
-    });
-    const endLLMCall = performance.now();
-
-    const latencyMs = endLLMCall - startLLMCall;
-
-    const usage = llmResponse.totalUsage;
-    
-    return {
-      ok: true,
-      data: llmResponse.output,
-      dateGeneratedFor: date,
-      rawText: llmResponse.text,
-      usage: {
-        completionTokens: usage.outputTokens,
-        promptTokens: usage.inputTokens,
-        totalTokens: usage.totalTokens,
-      },
-      modelId: modelId,
-      performanceMetrics: {
-        inputValidationLatencyMs,
-        promptGenerationLatencyMs,
-        latencyMs,
-      },
-      runId: input.runId,
-    }
-
-
-  } catch (err) {
-    console.error("Failed to generate daily question", JSON.stringify(err, null, 2));
-    if (NoObjectGeneratedError.isInstance(err)) {
-      console.log('NoObjectGeneratedError');
-      console.log('Cause:', err.cause);
-      console.log('Text:', err.text);
-      console.log('Response:', err.response);
-      console.log('Usage:', err.usage);
+  const result = await executeLlmCall({
+    operation: "generateDailyQuestion",
+    modelId,
+    runId: input.runId,
+    performanceMetrics,
+    errorMessage: "Failed to generate daily question",
+    execute: async () => {
+      const llmResponse = await generateText({
+        model: modelId,
+        system: DAILY_GENERATOR_PROMPT,
+        prompt: userPrompt,
+        maxOutputTokens: 1200,
+        output: Output.object({ schema: LLMGeneratedDailyQuestion }),
+        temperature: 0.9,
+        presencePenalty: 0.6
+      });
 
       return {
-        ok: false,
-        data: null,
-        error: {
-          message: "Failed to generate daily question",
-          type: "model_error",
-          raw_error: err,
-        },
-        runId: input.runId,
-      }
-    }
+        data: llmResponse.output,
+        rawText: llmResponse.text,
+        usage: llmResponse.totalUsage,
+      };
+    },
+  });
 
-    return {
-      ok: false,
-      data: null,
-      error: {
-        message: "Failed to generate daily question",
-        type: "model_error",
-      },
-      runId: input.runId,
-    }
+  if (!result.ok) {
+    return result;
   }
 
   return {
-    ok: false,
-    data: null,
-    error: {
-      message: "Unreachable code path",
-      type: "internal_error",
-    },
-    runId: input.runId,
+    ...result,
+    dateGeneratedFor: date,
   };
 }
 
@@ -186,38 +114,11 @@ export interface GenerateQuestionsInput {
   count?: number;
 }
 
-export type GenerateQuestionsOutput =
-  | {
-      ok: true;
-      data: LLMGeneratedDailyQuestion[];
-      rawText?: string;
-      modelId?: GatewayModelId;
-      performanceMetrics?: PerformanceMetrics;
-      usage?: UsageMetrics;
-      runId?: string;
-    }
-  | {
-      ok: false;
-      data: null;
-      rawText?: string;
-      modelId?: GatewayModelId;
-      performanceMetrics?: PerformanceMetrics;
-      usage?: UsageMetrics;
-      error: {
-        message: string;
-        type: ErrorType;
-        code?: number;
-        param?: string;
-        value?: string;
-        raw_error?: unknown;
-      };
-      runId?: string;
-    };
+export type GenerateQuestionsOutput = LlmCallResult<LLMGeneratedDailyQuestion[]>;
 
 export async function generateQuestions(
   input: GenerateQuestionsInput
 ): Promise<GenerateQuestionsOutput> {
-  const startTime = performance.now();
   const count = Math.min(Math.max(1, input.count ?? 5), 20);
   const modelId = input.model ?? DEFAULT_MODEL;
 
@@ -226,61 +127,32 @@ export async function generateQuestions(
   const endPromptGeneration = performance.now();
   const promptGenerationLatencyMs = endPromptGeneration - startPromptGeneration;
 
-  try {
-    const startLLMCall = performance.now();
-    const llmResponse = await generateText({
-      model: modelId,
-      system: EXPANSIVE_GENERATOR_PROMPT,
-      prompt: userPrompt,
-      maxOutputTokens: 4000,
-      output: Output.object({ schema: LLMGeneratedDailyQuestionArray }),
-      temperature: 0.9,
-      presencePenalty: 0.6,
-    });
-    const endLLMCall = performance.now();
-    const latencyMs = endLLMCall - startLLMCall;
-    const usage = llmResponse.totalUsage;
+  return executeLlmCall({
+    operation: "generateQuestions",
+    modelId,
+    runId: input.runId,
+    performanceMetrics: {
+      promptGenerationLatencyMs,
+    },
+    errorMessage: "Failed to generate questions",
+    execute: async () => {
+      const llmResponse = await generateText({
+        model: modelId,
+        system: EXPANSIVE_GENERATOR_PROMPT,
+        prompt: userPrompt,
+        maxOutputTokens: 4000,
+        output: Output.object({ schema: LLMGeneratedDailyQuestionArray }),
+        temperature: 0.9,
+        presencePenalty: 0.6,
+      });
 
-    return {
-      ok: true,
-      data: llmResponse.output.questions,
-      rawText: llmResponse.text,
-      usage: {
-        completionTokens: usage.outputTokens,
-        promptTokens: usage.inputTokens,
-        totalTokens: usage.totalTokens,
-      },
-      modelId,
-      performanceMetrics: {
-        promptGenerationLatencyMs,
-        latencyMs,
-      },
-      runId: input.runId,
-    };
-  } catch (err) {
-    console.error("Failed to generate questions", JSON.stringify(err, null, 2));
-    if (NoObjectGeneratedError.isInstance(err)) {
       return {
-        ok: false,
-        data: null,
-        error: {
-          message: "Failed to generate questions",
-          type: "model_error",
-          raw_error: err,
-        },
-        runId: input.runId,
+        data: llmResponse.output.questions,
+        rawText: llmResponse.text,
+        usage: llmResponse.totalUsage,
       };
-    }
-    return {
-      ok: false,
-      data: null,
-      error: {
-        message: "Failed to generate questions",
-        type: "model_error",
-      },
-      runId: input.runId,
-    };
-  }
+    },
+  });
 }
 
 /**
