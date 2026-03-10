@@ -251,8 +251,10 @@ async function main() {
       }
     }
 
-    const topScore = result.allCandidates[0].combinedScore;
+    const winnerCandidate = result.allCandidates[0];
+    const topScore = winnerCandidate.combinedScore;
     let notes = `Generated question: ${generatedQuestionData.simple_text}`;
+    notes += `\nWinner candidateId: ${winnerCandidate.candidateId}`;
     notes += `\nTop combined score: ${topScore}`;
     if (libraryAdded > 0) {
       notes += `\n${libraryAdded} added to library`;

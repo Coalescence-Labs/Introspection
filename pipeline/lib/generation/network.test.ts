@@ -9,10 +9,14 @@ const fiveQuestions: LLMGeneratedDailyQuestion[] = [
   { category: "ideas", simple_text: "Q5?" },
 ];
 
-function makeJudgeOutput(scores: { questionIndex: number; score: number }[]) {
-  return JSON.stringify({
-    scores: scores.map((s) => ({ questionIndex: s.questionIndex, score: s.score })),
-  });
+function makeJudgeOutput(scores: { candidateId: string; score: number }[]) {
+  return {
+    scores: scores.map((s) => ({ candidateId: s.candidateId, score: s.score })),
+  };
+}
+
+function makeJudgeOutputJson(scores: { candidateId: string; score: number }[]) {
+  return JSON.stringify(makeJudgeOutput(scores));
 }
 
 mock.module("../llm", () => ({
@@ -38,14 +42,21 @@ mock.module("../llm-metrics", () => ({
   },
 }));
 
-const { buildJudgeUserMessage, runDailyNetwork } = await import("./network");
+const {
+  assignCandidateIds,
+  buildJudgeUserMessage,
+  runDailyNetwork,
+} = await import("./network");
 
-test("buildJudgeUserMessage returns JSON payload and optional context", () => {
-  const msg = buildJudgeUserMessage(fiveQuestions);
-  expect(msg).toContain("Candidate questions (indexed 0 through 4)");
+test("buildJudgeUserMessage returns JSON payload with candidateId and optional context", () => {
+  const candidates = assignCandidateIds(fiveQuestions);
+  const msg = buildJudgeUserMessage(candidates);
+  expect(msg).toContain("candidateId");
   expect(msg).toContain("Q1?");
   expect(msg).toContain("Q5?");
-  const withContext = buildJudgeUserMessage(fiveQuestions, "Recent: A, B");
+  expect(msg).toContain("cand_000");
+  expect(msg).toContain("cand_004");
+  const withContext = buildJudgeUserMessage(candidates, "Recent: A, B");
   expect(withContext).toContain("Context:");
   expect(withContext).toContain("Recent: A, B");
 });
@@ -70,10 +81,13 @@ test("runDailyNetwork returns partial on judge failure so caller can persist", a
           runId: undefined,
         } as unknown as import("../llm-metrics").LlmCallResult<T>;
       }
-      const scores = [1, 2, 3, 4, 5].map((score, questionIndex) => ({ questionIndex, score }));
+      const scores = [1, 2, 3, 4, 5].map((score, i) => ({
+        candidateId: `cand_${String(i).padStart(3, "0")}`,
+        score,
+      }));
       return {
         ok: true as const,
-        data: makeJudgeOutput(scores) as T,
+        data: makeJudgeOutputJson(scores) as T,
         modelId: "openai/gpt-5.2",
         runId: undefined,
         performanceMetrics: { latencyMs: 100 },
@@ -86,10 +100,10 @@ test("runDailyNetwork returns partial on judge failure so caller can persist", a
   if (!result.ok) {
     expect(result.error.message).toContain("Tone judge");
     expect(result.partial).toBeDefined();
-    expect(result.partial!.questions).toHaveLength(5);
-    expect(result.partial!.novelty).toBeDefined();
-    expect(result.partial!.clarity).toBeDefined();
-    expect(result.partial!.tone).toBeUndefined();
+    expect(result.partial?.questions).toHaveLength(5);
+    expect(result.partial?.novelty).toBeDefined();
+    expect(result.partial?.clarity).toBeDefined();
+    expect(result.partial?.tone).toBeUndefined();
   }
 });
 
@@ -128,17 +142,26 @@ test("runDailyNetwork returns shape and compile/rank/benchmark", async () => {
 
   mock.module("../llm-metrics", () => ({
     executeLlmCall: async <T>(input: { operation: string }) => {
-      let scores: { questionIndex: number; score: number }[];
+      let scores: { candidateId: string; score: number }[];
       if (input.operation === "judge-novelty") {
-        scores = noveltyScores.map((score, questionIndex) => ({ questionIndex, score }));
+        scores = noveltyScores.map((score, i) => ({
+          candidateId: `cand_${String(i).padStart(3, "0")}`,
+          score,
+        }));
       } else if (input.operation === "judge-clarity") {
-        scores = clarityScores.map((score, questionIndex) => ({ questionIndex, score }));
+        scores = clarityScores.map((score, i) => ({
+          candidateId: `cand_${String(i).padStart(3, "0")}`,
+          score,
+        }));
       } else {
-        scores = toneScores.map((score, questionIndex) => ({ questionIndex, score }));
+        scores = toneScores.map((score, i) => ({
+          candidateId: `cand_${String(i).padStart(3, "0")}`,
+          score,
+        }));
       }
       return {
         ok: true as const,
-        data: makeJudgeOutput(scores) as T,
+        data: makeJudgeOutputJson(scores) as T,
         modelId: "openai/gpt-5.2",
         runId: undefined,
         usage: { promptTokens: 50, completionTokens: 100, totalTokens: 150 },
@@ -162,6 +185,7 @@ test("runDailyNetwork returns shape and compile/rank/benchmark", async () => {
   expect(result.metrics.totalLatencyMs).toBe(50 + 100 * 3);
 
   for (const c of result.allCandidates) {
+    expect(c).toHaveProperty("candidateId");
     expect(c).toHaveProperty("question");
     expect(c).toHaveProperty("questionIndex");
     expect(c).toHaveProperty("combinedScore");
@@ -212,10 +236,13 @@ test("runDailyNetwork with questionCount override uses that count and returns ju
 
   mock.module("../llm-metrics", () => ({
     executeLlmCall: async <T>(input: { operation: string }) => {
-      const scores = [7, 8].map((score, questionIndex) => ({ questionIndex, score }));
+      const scores = [7, 8].map((score, i) => ({
+        candidateId: `cand_${String(i).padStart(3, "0")}`,
+        score,
+      }));
       return {
         ok: true as const,
-        data: makeJudgeOutput(scores) as T,
+        data: makeJudgeOutputJson(scores) as T,
         modelId: "openai/gpt-5.2",
         runId: undefined,
         usage: { promptTokens: 50, completionTokens: 100, totalTokens: 150 },
@@ -234,4 +261,106 @@ test("runDailyNetwork with questionCount override uses that count and returns ju
   expect(result.judgeOutputs.novelty.scores).toHaveLength(2);
   expect(result.judgeOutputs.clarity.scores).toHaveLength(2);
   expect(result.judgeOutputs.tone.scores).toHaveLength(2);
+});
+
+test("runDailyNetwork merges scores by candidateId when judge returns shuffled order", async () => {
+  mock.module("../llm", () => ({
+    generateQuestions: async () => ({
+      ok: true as const,
+      data: fiveQuestions,
+      modelId: "openai/gpt-5.2",
+      runId: undefined,
+      usage: { promptTokens: 10, completionTokens: 20, totalTokens: 30 },
+      performanceMetrics: { latencyMs: 50 },
+    }),
+  }));
+
+  const noveltyByCandidateId: Record<string, number> = {
+    cand_000: 3,
+    cand_001: 5,
+    cand_002: 1,
+    cand_003: 9,
+    cand_004: 7,
+  };
+  mock.module("../llm-metrics", () => ({
+    executeLlmCall: async <T>(input: { operation: string }) => {
+      const order = ["cand_002", "cand_000", "cand_001", "cand_004", "cand_003"];
+      const scores =
+        input.operation === "judge-novelty"
+          ? order.map((candidateId) => ({
+              candidateId,
+              score: noveltyByCandidateId[candidateId] ?? 0,
+            }))
+          : [0, 1, 2, 3, 4].map((i) => ({
+              candidateId: `cand_${String(i).padStart(3, "0")}`,
+              score: 5,
+            }));
+      return {
+        ok: true as const,
+        data: makeJudgeOutputJson(scores) as T,
+        modelId: "openai/gpt-5.2",
+        runId: undefined,
+        usage: { promptTokens: 50, completionTokens: 100, totalTokens: 150 },
+        performanceMetrics: { latencyMs: 100 },
+      };
+    },
+  }));
+
+  const { runDailyNetwork: runWithMock } = await import("./network");
+  const result = await runWithMock({ date: "2025-03-10" });
+
+  expect(result.ok).toBe(true);
+  if (!result.ok) return;
+  const q1 = result.allCandidates.find((c) => c.question.simple_text === "Q1?");
+  const q2 = result.allCandidates.find((c) => c.question.simple_text === "Q2?");
+  const q3 = result.allCandidates.find((c) => c.question.simple_text === "Q3?");
+  expect(q1?.candidateId).toBe("cand_000");
+  expect(q1?.novelty).toBe(3);
+  expect(q2?.candidateId).toBe("cand_001");
+  expect(q2?.novelty).toBe(5);
+  expect(q3?.candidateId).toBe("cand_002");
+  expect(q3?.novelty).toBe(1);
+});
+
+test("runDailyNetwork returns invalid_judge_output when judge returns wrong candidateIds", async () => {
+  mock.module("../llm", () => ({
+    generateQuestions: async () => ({
+      ok: true as const,
+      data: fiveQuestions,
+      modelId: "openai/gpt-5.2",
+      runId: undefined,
+      usage: { promptTokens: 10, completionTokens: 20, totalTokens: 30 },
+      performanceMetrics: { latencyMs: 50 },
+    }),
+  }));
+
+  mock.module("../llm-metrics", () => ({
+    executeLlmCall: async <T>(input: { operation: string }) => {
+      const scores =
+        input.operation === "judge-novelty"
+          ? [{ candidateId: "cand_000", score: 5 }, { candidateId: "cand_001", score: 5 }]
+          : [0, 1, 2, 3, 4].map((i) => ({
+              candidateId: `cand_${String(i).padStart(3, "0")}`,
+              score: 5,
+            }));
+      return {
+        ok: true as const,
+        data: makeJudgeOutputJson(scores) as T,
+        modelId: "openai/gpt-5.2",
+        runId: undefined,
+        usage: { promptTokens: 50, completionTokens: 100, totalTokens: 150 },
+        performanceMetrics: { latencyMs: 100 },
+      };
+    },
+  }));
+
+  const { runDailyNetwork: runWithMock } = await import("./network");
+  const result = await runWithMock({ date: "2025-03-10" });
+
+  expect(result.ok).toBe(false);
+  if (!result.ok) {
+    expect(result.error.type).toBe("invalid_judge_output");
+    expect(result.error.message).toContain("validation failed");
+    expect(result.error.message).toMatch(/missing|novelty/i);
+  }
 });

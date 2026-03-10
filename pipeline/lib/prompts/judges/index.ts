@@ -3,7 +3,7 @@
  * Each judge receives these as the system message; the user message contains
  * the candidate questions (and optional context). Judge response must be
  * valid JSON matching JudgePanelOutputSchema in pipeline/schemas/judge-score.ts:
- * { scores: [{ questionIndex, score, rationale? }, ...] }, one entry per question.
+ * { scores: [{ candidateId, score, rationale? }, ...] }, one entry per candidate (keyed by candidateId).
  *
  * Target: ~1500 tokens max per prompt.
  */

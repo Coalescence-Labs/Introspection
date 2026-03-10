@@ -45,7 +45,20 @@ async function writeRecapFile(
     date,
     requestedCount: requestedCount ?? null,
     actualCount: questions.length,
-    questions: questions.map((q, i) => ({ questionIndex: i, category: q.category, simple_text: q.simple_text })),
+    questions:
+      result.ok
+        ? result.allCandidates.map((c) => ({
+            candidateId: c.candidateId,
+            questionIndex: c.questionIndex,
+            category: c.question.category,
+            simple_text: c.question.simple_text,
+          }))
+        : (result.partial?.questions ?? []).map((q, i) => ({
+            candidateId: `cand_${String(i).padStart(3, "0")}`,
+            questionIndex: i,
+            category: q.category,
+            simple_text: q.simple_text,
+          })),
     judges:
       result.ok
         ? result.judgeOutputs
@@ -58,6 +71,7 @@ async function writeRecapFile(
 
   if (result.ok) {
     payload.rankedCandidates = result.allCandidates.map((c) => ({
+      candidateId: c.candidateId,
       questionIndex: c.questionIndex,
       combinedScore: c.combinedScore,
       novelty: c.novelty,
@@ -314,7 +328,7 @@ function printNetworkSuccess(candidates: CandidateWithScores[]): void {
   for (let i = 0; i < candidates.length; i++) {
     const c = candidates[i];
     const label = i === 0 ? "Candidate 1 (winner)" : `Candidate ${i + 1}`;
-    console.log(`\n  --- ${label} ---`);
+    console.log(`\n  --- ${label} ${c.candidateId} ---`);
     console.log(`  ${c.question.simple_text}`);
     console.log(
       `  combined:  ${c.combinedScore.toFixed(2).padStart(5)}   novelty: ${c.novelty}   clarity: ${c.clarity}   tone: ${c.tone}`

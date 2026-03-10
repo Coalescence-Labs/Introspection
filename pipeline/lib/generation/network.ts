@@ -11,6 +11,7 @@ import type { LLMGeneratedDailyQuestion } from "../schema";
 import {
   JudgePanelOutputSchema,
   type JudgePanelOutput,
+  type JudgeScore,
 } from "../../schemas/judge-score";
 import {
   CLARITY_JUDGE_SYSTEM_PROMPT,
@@ -43,7 +44,15 @@ export interface RunDailyNetworkInput {
   persist?: RunDailyNetworkPersist;
 }
 
+/** A generated question with a stable pipeline-assigned id for judge merge. */
+export interface Candidate {
+  candidateId: string;
+  questionIndex: number;
+  question: LLMGeneratedDailyQuestion;
+}
+
 export interface CandidateWithScores {
+  candidateId: string;
   question: LLMGeneratedDailyQuestion;
   questionIndex: number;
   combinedScore: number;
@@ -99,26 +108,120 @@ export type RunDailyNetworkResult =
       partial?: PartialNetworkResult;
     };
 
+const CANDIDATE_ID_PAD = 3;
+
+/** Assigns stable candidateIds (cand_000, cand_001, ...) to generated questions. */
+export function assignCandidateIds(
+  questions: LLMGeneratedDailyQuestion[]
+): Candidate[] {
+  const candidates: Candidate[] = questions.map((q, i) => ({
+    candidateId: `cand_${String(i).padStart(CANDIDATE_ID_PAD, "0")}`,
+    questionIndex: i,
+    question: q,
+  }));
+  const uniqueIds = new Set(candidates.map((c) => c.candidateId));
+  if (uniqueIds.size !== candidates.length) {
+    throw new Error(
+      `assignCandidateIds: duplicate candidateIds (expected ${candidates.length} unique)`
+    );
+  }
+  return candidates;
+}
+
 /**
- * Build the shared user message for all three judges: 5 questions as JSON + optional context.
+ * Build the shared user message for all three judges.
+ * Each candidate includes candidateId, questionIndex, category, simple_text so the judge can key scores by candidateId.
  */
 export function buildJudgeUserMessage(
-  questions: LLMGeneratedDailyQuestion[],
+  candidates: Candidate[],
   context?: string
 ): string {
   const payload = JSON.stringify(
-    questions.map((q) => ({
-      category: q.category,
-      simple_text: q.simple_text,
+    candidates.map((c) => ({
+      candidateId: c.candidateId,
+      questionIndex: c.questionIndex,
+      category: c.question.category,
+      simple_text: c.question.simple_text,
     })),
     null,
     2
   );
-  let message = `Candidate questions (indexed 0 through ${questions.length - 1}):\n\n${payload}`;
+  let message = `Candidate questions (each has a stable candidateId; use it in your response to key scores):\n\n${payload}`;
   if (context?.trim()) {
     message += `\n\nContext:\n${context.trim()}`;
   }
   return message;
+}
+
+/** Thrown when judge output has wrong/missing/duplicate candidateIds. */
+export class JudgeOutputValidationError extends Error {
+  constructor(
+    message: string,
+    public readonly dimension: string,
+    public readonly missing?: string[],
+    public readonly extra?: string[],
+    public readonly duplicates?: string[]
+  ) {
+    super(message);
+    this.name = "JudgeOutputValidationError";
+  }
+}
+
+const EXPECTED_CANDIDATE_ID_REGEX = /^cand_\d+$/;
+
+/**
+ * Validates that judge scores have exactly one entry per expected candidateId.
+ * Throws JudgeOutputValidationError on duplicate, missing, or extra candidateIds.
+ */
+export function validateJudgeScoresByCandidateId(
+  scores: JudgeScore[],
+  expectedCandidateIds: Set<string>,
+  dimension: string
+): void {
+  const seen = new Set<string>();
+  const duplicates: string[] = [];
+  const extra: string[] = [];
+
+  for (const entry of scores) {
+    const id = entry.candidateId;
+    if (!EXPECTED_CANDIDATE_ID_REGEX.test(id)) {
+      throw new JudgeOutputValidationError(
+        `Judge ${dimension}: invalid candidateId "${id}" (expected format cand_000, cand_001, ...)`,
+        dimension
+      );
+    }
+    if (!expectedCandidateIds.has(id)) {
+      extra.push(id);
+      continue;
+    }
+    if (seen.has(id)) {
+      duplicates.push(id);
+    }
+    seen.add(id);
+  }
+
+  const missing = [...expectedCandidateIds].filter((id) => !seen.has(id));
+
+  if (duplicates.length > 0 || missing.length > 0 || extra.length > 0) {
+    const parts: string[] = [];
+    if (missing.length) parts.push(`missing: ${missing.join(", ")}`);
+    if (extra.length) parts.push(`extra: ${extra.join(", ")}`);
+    if (duplicates.length) parts.push(`duplicates: ${[...new Set(duplicates)].join(", ")}`);
+    throw new JudgeOutputValidationError(
+      `Judge ${dimension}: score-candidateId mismatch (${parts.join("; ")})`,
+      dimension,
+      missing.length ? missing : undefined,
+      extra.length ? extra : undefined,
+      duplicates.length ? [...new Set(duplicates)] : undefined
+    );
+  }
+
+  if (scores.length !== expectedCandidateIds.size) {
+    throw new JudgeOutputValidationError(
+      `Judge ${dimension}: expected ${expectedCandidateIds.size} scores, got ${scores.length}`,
+      dimension
+    );
+  }
 }
 
 function parseJudgeResponse(raw: string): JudgePanelOutput | null {
@@ -254,10 +357,13 @@ export async function runDailyNetwork(
     return { ok: false, error: { message: "Generator returned no questions", type: "model_error" } };
   }
 
+  const candidates = assignCandidateIds(questions);
+  const expectedCandidateIds = new Set(candidates.map((c) => c.candidateId));
+
   const { persist } = input;
   await persist?.onQuestionsGenerated(questions);
 
-  const userMessage = buildJudgeUserMessage(questions, context);
+  const userMessage = buildJudgeUserMessage(candidates, context);
 
   const runAndPersist = async (
     dimension: JudgeDimension
@@ -319,40 +425,77 @@ export async function runDailyNetwork(
     };
   }
 
-  const n = questions.length;
-  const { noveltyWeight, clarityWeight, toneWeight } = config.scoring;
+  try {
+    validateJudgeScoresByCandidateId(
+      noveltyResult.data.scores,
+      expectedCandidateIds,
+      "novelty"
+    );
+    validateJudgeScoresByCandidateId(
+      clarityResult.data.scores,
+      expectedCandidateIds,
+      "clarity"
+    );
+    validateJudgeScoresByCandidateId(
+      toneResult.data.scores,
+      expectedCandidateIds,
+      "tone"
+    );
+  } catch (err) {
+    const message =
+      err instanceof JudgeOutputValidationError
+        ? err.message
+        : err instanceof Error
+          ? err.message
+          : String(err);
+    return {
+      ok: false,
+      error: {
+        message: `Judge output validation failed: ${message}`,
+        type: "invalid_judge_output",
+      },
+      partial,
+    };
+  }
 
-  const scoresByIndex = new Map<
-    number,
+  const { noveltyWeight, clarityWeight, toneWeight } = config.scoring;
+  const scoresByCandidateId = new Map<
+    string,
     { novelty: number; clarity: number; tone: number }
   >();
   for (const entry of noveltyResult.data.scores) {
-    scoresByIndex.set(entry.questionIndex, {
+    scoresByCandidateId.set(entry.candidateId, {
       novelty: entry.score,
       clarity: 0,
       tone: 0,
     });
   }
   for (const entry of clarityResult.data.scores) {
-    const existing = scoresByIndex.get(entry.questionIndex);
+    const existing = scoresByCandidateId.get(entry.candidateId);
     if (existing) existing.clarity = entry.score;
   }
   for (const entry of toneResult.data.scores) {
-    const existing = scoresByIndex.get(entry.questionIndex);
+    const existing = scoresByCandidateId.get(entry.candidateId);
     if (existing) existing.tone = entry.score;
   }
 
   const minAcceptableScore = config.minAcceptableScore;
   const allCandidates: CandidateWithScores[] = [];
-  for (let i = 0; i < n; i++) {
-    const s = scoresByIndex.get(i) ?? { novelty: 0, clarity: 0, tone: 0 };
+  for (const c of candidates) {
+    const s =
+      scoresByCandidateId.get(c.candidateId) ?? {
+        novelty: 0,
+        clarity: 0,
+        tone: 0,
+      };
     const combinedScore =
       s.novelty * noveltyWeight +
       s.clarity * clarityWeight +
       s.tone * toneWeight;
     allCandidates.push({
-      question: questions[i],
-      questionIndex: i,
+      candidateId: c.candidateId,
+      question: c.question,
+      questionIndex: c.questionIndex,
       combinedScore,
       novelty: s.novelty,
       clarity: s.clarity,

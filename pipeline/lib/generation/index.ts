@@ -1,6 +1,10 @@
 export {
+  assignCandidateIds,
   buildJudgeUserMessage,
+  JudgeOutputValidationError,
   runDailyNetwork,
+  validateJudgeScoresByCandidateId,
+  type Candidate,
   type CandidateWithScores,
   type NetworkCallMetrics,
   type NetworkRunMetrics,
