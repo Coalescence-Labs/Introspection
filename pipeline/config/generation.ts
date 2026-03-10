@@ -1,5 +1,8 @@
 import type { GatewayModelId } from "ai";
-import { type GenerationConfig, GenerationConfigSchema } from "../schemas/generation-config";
+import {
+  type GenerationConfig,
+  GenerationConfigSchema,
+} from "../schemas/generation-config";
 
 const generationConfigSource = {
   networkEnabled: false,
@@ -9,10 +12,10 @@ const generationConfigSource = {
   generatorQuestionCount: 5,
 
   models: {
-    generator: "openai/gpt-5.2" as GatewayModelId,
-    noveltyJudge: "openai/gpt-5.2" as GatewayModelId,
-    clarityJudge: "openai/gpt-5.2" as GatewayModelId,
-    toneJudge: "openai/gpt-5.2" as GatewayModelId,
+    generator: "anthropic/claude-opus-4.6" as GatewayModelId,
+    noveltyJudge: "anthropic/claude-sonnet-4.6" as GatewayModelId,
+    clarityJudge: "anthropic/claude-sonnet-4.6" as GatewayModelId,
+    toneJudge: "anthropic/claude-sonnet-4.6" as GatewayModelId,
   },
 
   scoring: {
@@ -22,4 +25,6 @@ const generationConfigSource = {
   },
 } satisfies GenerationConfig;
 
-export const generationConfig = GenerationConfigSchema.parse(generationConfigSource);
+export const generationConfig = GenerationConfigSchema.parse(
+  generationConfigSource,
+);

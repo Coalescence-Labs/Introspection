@@ -105,6 +105,50 @@ test("executeLlmCall returns normalized error on generic throw", async () => {
   expect(typeof result.performanceMetrics?.latencyMs).toBe("number");
 });
 
+test("executeLlmCall sets error.type from error.code (429, 5xx, 4xx)", async () => {
+  const err429 = Object.assign(new Error("rate limit"), { code: 429 });
+  const result429 = await executeLlmCallWithMockedFs({
+    operation: "rateLimitOp",
+    modelId: "openai/gpt-4" as import("ai").GatewayModelId,
+    errorMessage: "Rate limited",
+    execute: async () => {
+      throw err429;
+    },
+  });
+  expect(result429.ok).toBe(false);
+  if (result429.ok) return;
+  expect(result429.error.type).toBe("rate_limit_exceeded");
+  expect(result429.error.code).toBe(429);
+
+  const err502 = Object.assign(new Error("bad gateway"), { code: 502 });
+  const result502 = await executeLlmCallWithMockedFs({
+    operation: "gatewayOp",
+    modelId: "openai/gpt-4" as import("ai").GatewayModelId,
+    errorMessage: "Gateway error",
+    execute: async () => {
+      throw err502;
+    },
+  });
+  expect(result502.ok).toBe(false);
+  if (result502.ok) return;
+  expect(result502.error.type).toBe("internal_error");
+  expect(result502.error.code).toBe(502);
+
+  const err400 = Object.assign(new Error("bad request"), { code: 400 });
+  const result400 = await executeLlmCallWithMockedFs({
+    operation: "badRequestOp",
+    modelId: "openai/gpt-4" as import("ai").GatewayModelId,
+    errorMessage: "Bad request",
+    execute: async () => {
+      throw err400;
+    },
+  });
+  expect(result400.ok).toBe(false);
+  if (result400.ok) return;
+  expect(result400.error.type).toBe("invalid_input");
+  expect(result400.error.code).toBe(400);
+});
+
 test("executeLlmCall does not write log when env vars unset", async () => {
   const prevPath = process.env.INTROSPECTION_LLM_LOG_PATH;
   const prevDir = process.env.INTROSPECTION_LLM_LOG_DIR;

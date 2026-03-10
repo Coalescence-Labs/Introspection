@@ -119,16 +119,25 @@ function extractField(
   return undefined;
 }
 
+function errorTypeFromCode(code: number): ErrorType {
+  if (code === 429) return "rate_limit_exceeded";
+  if (code >= 500 || code === 408) return "internal_error";
+  if (code >= 400 && code < 500) return "invalid_input";
+  return "model_error";
+}
+
 function normalizeError(error: unknown, fallbackMessage: string): LlmCallError {
   const message = error instanceof Error && error.message ? error.message : fallbackMessage;
+  const code =
+    typeof extractField(error, "code") === "number"
+      ? (extractField(error, "code") as number)
+      : undefined;
+  const type = code !== undefined ? errorTypeFromCode(code) : "model_error";
 
   return {
     message: fallbackMessage,
-    type: "model_error",
-    code:
-      typeof extractField(error, "code") === "number"
-        ? (extractField(error, "code") as number)
-        : undefined,
+    type,
+    code,
     param:
       typeof extractField(error, "param") === "string"
         ? (extractField(error, "param") as string)
