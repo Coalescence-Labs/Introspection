@@ -1,6 +1,6 @@
 import { GatewayModelId, generateText, Output, NoObjectGeneratedError } from "ai";
 import { LLMGeneratedDailyQuestion, LLMGeneratedDailyQuestionArray } from "./schema";
-import { DAILY_GENERATOR_PROMPT, EXPANSIVE_GENERATOR_PROMPT } from "./prompt";
+import { DAILY_GENERATOR_PROMPT, EXPANSIVE_GENERATOR_PROMPT } from "./prompts";
 
 const DEFAULT_MODEL: GatewayModelId = "openai/gpt-5.2"
 
