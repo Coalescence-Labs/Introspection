@@ -112,7 +112,7 @@ export interface GenerateQuestionsInput {
   model?: GatewayModelId;
   runId?: string;
   context?: string;
-  /** Number of questions to generate (default 5) */
+  /** Number of questions to generate (default 10) */
   count?: number;
 }
 
@@ -121,7 +121,7 @@ export type GenerateQuestionsOutput = LlmCallResult<LLMGeneratedDailyQuestion[]>
 export async function generateQuestions(
   input: GenerateQuestionsInput
 ): Promise<GenerateQuestionsOutput> {
-  const count = Math.min(Math.max(1, input.count ?? 5), 50);
+  const count = Math.min(Math.max(1, input.count ?? 10), 50);
   const modelId = input.model ?? DEFAULT_MODEL;
 
   const startPromptGeneration = performance.now();

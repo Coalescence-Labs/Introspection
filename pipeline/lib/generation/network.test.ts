@@ -15,10 +15,6 @@ function makeJudgeOutput(scores: { candidateId: string; score: number }[]) {
   };
 }
 
-function makeJudgeOutputJson(scores: { candidateId: string; score: number }[]) {
-  return JSON.stringify(makeJudgeOutput(scores));
-}
-
 mock.module("../llm", () => ({
   generateQuestions: async () => ({
     ok: true as const,
@@ -87,7 +83,7 @@ test("runDailyNetwork returns partial on judge failure so caller can persist", a
       }));
       return {
         ok: true as const,
-        data: makeJudgeOutputJson(scores) as T,
+        data: makeJudgeOutput(scores) as T,
         modelId: "openai/gpt-5.2",
         runId: undefined,
         performanceMetrics: { latencyMs: 100 },
@@ -161,7 +157,7 @@ test("runDailyNetwork returns shape and compile/rank/benchmark", async () => {
       }
       return {
         ok: true as const,
-        data: makeJudgeOutputJson(scores) as T,
+        data: makeJudgeOutput(scores) as T,
         modelId: "openai/gpt-5.2",
         runId: undefined,
         usage: { promptTokens: 50, completionTokens: 100, totalTokens: 150 },
@@ -242,7 +238,7 @@ test("runDailyNetwork with questionCount override uses that count and returns ju
       }));
       return {
         ok: true as const,
-        data: makeJudgeOutputJson(scores) as T,
+        data: makeJudgeOutput(scores) as T,
         modelId: "openai/gpt-5.2",
         runId: undefined,
         usage: { promptTokens: 50, completionTokens: 100, totalTokens: 150 },
@@ -297,7 +293,7 @@ test("runDailyNetwork merges scores by candidateId when judge returns shuffled o
             }));
       return {
         ok: true as const,
-        data: makeJudgeOutputJson(scores) as T,
+        data: makeJudgeOutput(scores) as T,
         modelId: "openai/gpt-5.2",
         runId: undefined,
         usage: { promptTokens: 50, completionTokens: 100, totalTokens: 150 },
@@ -345,7 +341,7 @@ test("runDailyNetwork returns invalid_judge_output when judge returns wrong cand
             }));
       return {
         ok: true as const,
-        data: makeJudgeOutputJson(scores) as T,
+        data: makeJudgeOutput(scores) as T,
         modelId: "openai/gpt-5.2",
         runId: undefined,
         usage: { promptTokens: 50, completionTokens: 100, totalTokens: 150 },

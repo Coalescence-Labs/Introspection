@@ -12,7 +12,7 @@
  *   q / exit  - quit
  */
 
-import { mkdir, writeFile } from "node:fs/promises";
+import { appendFile, mkdir, writeFile } from "node:fs/promises";
 import * as readline from "node:readline";
 import { dirname, join } from "node:path";
 import type { GatewayModelId } from "ai";
@@ -28,6 +28,28 @@ import type { LLMGeneratedDailyQuestion } from "./lib/schema";
 import { getLibraryQuestions, insertGeneratedQuestions } from "./lib/supabase/queries";
 
 const OUTPUT_DIR = join(import.meta.dir, "output");
+const SHELL_LOG_PATH = join(OUTPUT_DIR, "question-shell.log");
+
+/** Append a timestamped error entry to question-shell.log. Ensures output dir exists. */
+async function logErrorToFile(entry: {
+  source: string;
+  message: string;
+  type?: string;
+  details?: unknown;
+}): Promise<void> {
+  try {
+    await mkdir(dirname(SHELL_LOG_PATH), { recursive: true });
+    const ts = new Date().toISOString();
+    const line =
+      `${ts}  [${entry.source}] ${entry.message}` +
+      (entry.type ? ` (${entry.type})` : "") +
+      (entry.details != null ? `  ${JSON.stringify(entry.details)}` : "") +
+      "\n";
+    await appendFile(SHELL_LOG_PATH, line, "utf8");
+  } catch (err) {
+    console.warn("  Failed to write to log file:", err);
+  }
+}
 
 /** Build recap payload and write a timestamped JSON file under pipeline/output/. */
 async function writeRecapFile(
@@ -108,6 +130,8 @@ const ALLOWED_MODELS: { label: string; id: GatewayModelId }[] = [
 function printBanner(): void {
   console.log(`
   Question Shell — generate, review, and persist questions to Supabase
+  -----------------------------------------------------------------
+  Errors are logged to pipeline/output/question-shell.log
   -----------------------------------------------------------------
   Commands:
     g           Generate 1 question
@@ -212,11 +236,22 @@ async function runGenerateAndApproval(
     });
   } catch (err) {
     console.error("  Generate failed:", err);
+    await logErrorToFile({
+      source: "generate",
+      message: err instanceof Error ? err.message : String(err),
+      details: { count },
+    });
     return { approvedTexts: [], deniedTexts: [] };
   }
 
   if (!result?.ok) {
     console.error("  Failed to generate questions:", JSON.stringify(result?.error, null, 2));
+    await logErrorToFile({
+      source: "generate",
+      message: result?.error?.message ?? "Unknown error",
+      type: result?.error?.type,
+      details: { count },
+    });
     return { approvedTexts: [], deniedTexts: [] };
   }
 
@@ -245,6 +280,11 @@ async function runGenerateAndApproval(
         console.log(`\n  Saved to Supabase: ${ids.length} question(s). IDs: ${ids.join(", ")}`);
       } catch (err) {
         console.error("  Supabase insert failed:", err);
+        await logErrorToFile({
+          source: "supabase-insert",
+          message: err instanceof Error ? err.message : String(err),
+          details: { approvedCount: approved.length },
+        });
       }
     }
 
@@ -259,6 +299,12 @@ async function runGenerateAndApproval(
     });
     if (!retryResult?.ok) {
       console.error("  Retry generation failed:", retryResult?.error);
+      await logErrorToFile({
+        source: "generate-retry",
+        message: retryResult?.error?.message ?? "Unknown error",
+        type: retryResult?.error?.type,
+        details: { retryCount },
+      });
       break;
     }
     batch = retryResult.data;
@@ -354,6 +400,95 @@ function printNetworkMetrics(metrics: NetworkRunMetrics): void {
   console.log(`  Per call: ${parts.join("  |  ")}`);
 }
 
+type NetworkFailureResult = Extract<RunDailyNetworkResult, { ok: false }>;
+
+/** Print a comprehensive dump when the network fails (judge or validation error). */
+function printNetworkFailureDump(result: NetworkFailureResult): void {
+  const { error, partial, partialMetrics } = result;
+  const errorType = error.type ?? "unknown";
+
+  console.log("\n  ─── Network failure ───");
+  console.log("  Error:", error.message);
+  console.log("  Type:", errorType);
+
+  if (error.details) {
+    console.log("  Details:");
+    for (const line of error.details.split("\n")) {
+      console.log("    " + line);
+    }
+  }
+
+  if (errorType === "model_error" && /invalid JSON/i.test(error.message)) {
+    console.log(
+      "  Hint: Judge response was likely truncated or malformed. Try fewer questions (e.g. n 5), or check recap JSON for raw output."
+    );
+  }
+  if (error.type === "invalid_judge_output") {
+    console.log("  Hint: Judge returned wrong/missing/duplicate candidateIds. Check recap for scores array.");
+  }
+
+  const expectedCount = partial?.questions?.length ?? 0;
+  if (expectedCount > 0) {
+    console.log("\n  Pipeline state:");
+    console.log("    Generator: ok (produced " + expectedCount + " candidate(s))");
+    const judges = [
+      { key: "novelty" as const, label: "Novelty judge" },
+      { key: "clarity" as const, label: "Clarity judge" },
+      { key: "tone" as const, label: "Tone judge" },
+    ];
+    for (const { key, label } of judges) {
+      const out = partial?.[key];
+      if (out?.scores != null) {
+        const n = out.scores.length;
+        const expected = expectedCount;
+        const status = n === expected ? `${n} scores` : `${n}/${expected} scores (mismatch)`;
+        console.log(`    ${label}: ok (${status})`);
+      } else {
+        console.log(`    ${label}: failed or not run`);
+      }
+    }
+  }
+
+  if (partial?.questions && partial.questions.length > 0) {
+    console.log("\n  Generated candidates (what was sent to judges):");
+    partial.questions.forEach((q, i) => {
+      const id = `cand_${String(i).padStart(3, "0")}`;
+      const text = q.simple_text.length > 72 ? q.simple_text.slice(0, 69) + "..." : q.simple_text;
+      console.log(`    ${id}  ${q.category}  ${text}`);
+    });
+  }
+
+  if (partial?.novelty?.scores?.length) {
+    console.log("\n  Novelty scores (partial):");
+    for (const s of partial.novelty.scores) {
+      const r = s.rationale ? `  // ${s.rationale.slice(0, 60)}${s.rationale.length > 60 ? "..." : ""}` : "";
+      console.log(`    ${s.candidateId}  ${s.score}${r}`);
+    }
+  }
+  if (partial?.clarity?.scores?.length) {
+    console.log("  Clarity scores (partial):");
+    for (const s of partial.clarity.scores) {
+      console.log(`    ${s.candidateId}  ${s.score}`);
+    }
+  }
+  if (partial?.tone?.scores?.length) {
+    console.log("  Tone scores (partial):");
+    for (const s of partial.tone.scores) {
+      console.log(`    ${s.candidateId}  ${s.score}`);
+    }
+  }
+
+  if (partialMetrics) {
+    console.log("\n  Token usage (partial run):");
+    printNetworkMetrics(partialMetrics);
+  }
+
+  if (partial?.questions?.length) {
+    console.log("\n  Partial result and judge outputs were written to the recap file (see path above).");
+  }
+  console.log("  ───────────────────────\n");
+}
+
 async function runNetworkAndMaybePersist(
   rl: readline.Interface,
   date: string,
@@ -372,10 +507,28 @@ async function runNetworkAndMaybePersist(
   }
 
   if (!result.ok) {
-    console.error("  Network failed:", result.error.message, result.error.type ?? "");
-    if (result.partial && result.partial.questions.length > 0) {
-      console.log("  (Partial result has questions but was not saved; use run-network-once.ts with persist for that.)");
-    }
+    printNetworkFailureDump(result);
+    const errorType = result.error.type ?? "";
+    await logErrorToFile({
+      source: "network",
+      message: result.error.message,
+      type: errorType,
+      details: {
+        ...(result.error.details && { parseOrValidationError: result.error.details }),
+        partialQuestions: result.partial?.questions?.length ?? 0,
+        partialMetrics: result.partialMetrics
+          ? {
+              totalTokens: result.partialMetrics.totalTokens,
+              totalPromptTokens: result.partialMetrics.totalPromptTokens,
+              totalCompletionTokens: result.partialMetrics.totalCompletionTokens,
+              calls: result.partialMetrics.calls.map((c) => ({
+                operation: c.operation,
+                totalTokens: c.totalTokens,
+              })),
+            }
+          : undefined,
+      },
+    });
     return;
   }
 
@@ -423,6 +576,11 @@ async function runNetworkAndMaybePersist(
     console.log(`  Saved to library: ${ids.length} question(s). IDs: ${ids.join(", ")}`);
   } catch (err) {
     console.error("  Supabase insert failed:", err);
+    await logErrorToFile({
+      source: "supabase-insert",
+      message: err instanceof Error ? err.message : String(err),
+      details: { toSaveCount: toSave.length },
+    });
   }
 }
 

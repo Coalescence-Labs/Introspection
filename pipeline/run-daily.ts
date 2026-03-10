@@ -18,6 +18,7 @@ import {
 } from "./lib/llm";
 import type { LLMGeneratedDailyQuestion } from "./lib/schema";
 import {
+  getLibraryQuestions,
   getRecentDailyQuestions,
   getRunByDate,
   insertGeneratedQuestion,
@@ -26,6 +27,7 @@ import {
   recordRunStart,
   setDailyQuestion,
 } from "./lib/supabase/queries";
+import { LIBRARY_NOVELTY_CAP } from "./lib/generation";
 
 let runId: string | null = null;
 const modelId: GatewayModelId = "openai/gpt-5.2";
@@ -153,10 +155,18 @@ async function main() {
    * 4. Generate: network (generator + judges) or legacy single call
    */
   if (generationConfig.networkEnabled) {
+    let libraryQuestionTextsForNovelty: string[] = [];
+    try {
+      const libraryRows = await getLibraryQuestions({ limit: LIBRARY_NOVELTY_CAP });
+      libraryQuestionTextsForNovelty = libraryRows.map((q) => q.simple_text);
+    } catch {
+      console.warn("Failed to load library questions for novelty judge, continuing without");
+    }
     const result = await runDailyNetwork({
       date: targetDate,
       context,
       runId: runId ?? undefined,
+      libraryQuestionTextsForNovelty,
     });
 
     if (!result.ok) {

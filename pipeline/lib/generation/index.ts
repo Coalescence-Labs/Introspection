@@ -2,6 +2,7 @@ export {
   assignCandidateIds,
   buildJudgeUserMessage,
   JudgeOutputValidationError,
+  LIBRARY_NOVELTY_CAP,
   runDailyNetwork,
   validateJudgeScoresByCandidateId,
   type Candidate,

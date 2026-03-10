@@ -3,7 +3,7 @@
  * No Supabase or run-daily logic; pure LLM + config + scoring.
  */
 
-import { type GatewayModelId, generateText } from "ai";
+import { type GatewayModelId, generateText, Output } from "ai";
 import { generationConfig } from "../../config/generation";
 import { executeLlmCall, type LlmCallFailure, type LlmCallResult } from "../llm-metrics";
 import { generateQuestions } from "../llm";
@@ -23,7 +23,6 @@ const BASE_BACKOFF_MS = 1000;
 const MAX_BACKOFF_MS = 30_000;
 const MAX_RETRIES_RATE_LIMIT = 3;
 const MAX_RETRIES_TRANSIENT = 2;
-const MAX_PARSE_RETRIES = 1;
 
 /** Optional callbacks to persist data as it becomes available so nothing is lost on failure. */
 export interface RunDailyNetworkPersist {
@@ -34,6 +33,9 @@ export interface RunDailyNetworkPersist {
   ): void | Promise<void>;
 }
 
+/** Max library questions passed to the novelty judge for comparison. */
+export const LIBRARY_NOVELTY_CAP = 150;
+
 export interface RunDailyNetworkInput {
   date: string;
   context?: string;
@@ -42,6 +44,8 @@ export interface RunDailyNetworkInput {
   questionCount?: number;
   /** If provided, called after generator succeeds and after each judge succeeds. */
   persist?: RunDailyNetworkPersist;
+  /** Question texts from the library to give the novelty judge (capped at LIBRARY_NOVELTY_CAP). */
+  libraryQuestionTextsForNovelty?: string[];
 }
 
 /** A generated question with a stable pipeline-assigned id for judge merge. */
@@ -103,9 +107,16 @@ export type RunDailyNetworkResult =
     }
   | {
       ok: false;
-      error: { message: string; type?: string };
+      error: {
+        message: string;
+        type?: string;
+        /** Parse/validation detail from judge (e.g. JSON parse error or Zod schema error). */
+        details?: string;
+      };
       /** Present when we have at least questions (and any completed judge results) to persist. */
       partial?: PartialNetworkResult;
+      /** Token usage for completed calls (generator + any judges that ran), so callers can show usage on failure. */
+      partialMetrics?: NetworkRunMetrics;
     };
 
 const CANDIDATE_ID_PAD = 3;
@@ -224,16 +235,6 @@ export function validateJudgeScoresByCandidateId(
   }
 }
 
-function parseJudgeResponse(raw: string): JudgePanelOutput | null {
-  try {
-    const json = JSON.parse(raw) as unknown;
-    const parsed = JudgePanelOutputSchema.safeParse(json);
-    return parsed.success ? parsed.data : null;
-  } catch {
-    return null;
-  }
-}
-
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -257,7 +258,7 @@ async function runJudgeOnce(
   userMessage: string,
   modelId: GatewayModelId,
   runId?: string
-): Promise<LlmCallResult<string>> {
+): Promise<LlmCallResult<JudgePanelOutput>> {
   const systemPrompt = JUDGE_SYSTEM_PROMPTS[dimension];
   return executeLlmCall({
     operation: `judge-${dimension}`,
@@ -269,10 +270,15 @@ async function runJudgeOnce(
         model: modelId,
         system: systemPrompt,
         prompt: userMessage,
-        maxOutputTokens: 2000,
+        maxOutputTokens: 4000,
+        output: Output.object({ schema: JudgePanelOutputSchema }),
       });
-      const text = response.text ?? "";
-      return { data: text, rawText: text, usage: response.totalUsage };
+      const output = response.output as JudgePanelOutput;
+      return {
+        data: output,
+        rawText: response.text ?? "",
+        usage: response.totalUsage,
+      };
     },
   });
 }
@@ -291,23 +297,7 @@ async function runJudgeWithRetry(
     const result = await runJudgeOnce(dimension, userMessage, modelId, runId);
 
     if (result.ok) {
-      const parsed = parseJudgeResponse(result.data);
-      if (parsed) {
-        return { ...result, data: parsed };
-      }
-      if (attempt < MAX_PARSE_RETRIES) {
-        attempt++;
-        continue;
-      }
-      return {
-        ok: false,
-        data: null,
-        error: {
-          message: `Judge ${dimension} returned invalid JSON`,
-          type: "model_error",
-        },
-        runId: result.runId,
-      };
+      return result;
     }
 
     const { error } = result as LlmCallFailure;
@@ -317,7 +307,7 @@ async function runJudgeWithRetry(
     const isRetryable = isRateLimit || isTransient;
 
     if (!isRetryable || attempt >= (isRateLimit ? MAX_RETRIES_RATE_LIMIT : maxRetries)) {
-      return result as LlmCallResult<JudgePanelOutput>;
+      return result;
     }
 
     attempt++;
@@ -333,7 +323,7 @@ export async function runDailyNetwork(
     input.questionCount != null
       ? Math.min(Math.max(1, input.questionCount), 50)
       : config.generatorQuestionCount;
-  const { context, runId } = input;
+  const { context, runId, libraryQuestionTextsForNovelty = [] } = input;
 
   const generatorResult = await generateQuestions({
     count,
@@ -363,7 +353,14 @@ export async function runDailyNetwork(
   const { persist } = input;
   await persist?.onQuestionsGenerated(questions);
 
-  const userMessage = buildJudgeUserMessage(candidates, context);
+  const sharedContext = context ?? "";
+  const libraryForNovelty = libraryQuestionTextsForNovelty.slice(0, LIBRARY_NOVELTY_CAP);
+  const noveltyContext =
+    libraryForNovelty.length > 0
+      ? `${sharedContext}${sharedContext ? "\n\n" : ""}Existing library questions (for novelty comparison):\n${libraryForNovelty.map((t, i) => `${i + 1}. ${t}`).join("\n")}`
+      : sharedContext;
+  const userMessageShared = buildJudgeUserMessage(candidates, sharedContext);
+  const userMessageNovelty = buildJudgeUserMessage(candidates, noveltyContext);
 
   const runAndPersist = async (
     dimension: JudgeDimension
@@ -374,6 +371,7 @@ export async function runDailyNetwork(
         : dimension === "clarity"
           ? config.models.clarityJudge
           : config.models.toneJudge;
+    const userMessage = dimension === "novelty" ? userMessageNovelty : userMessageShared;
     const result = await runJudgeWithRetry(dimension, userMessage, modelId, runId);
     if (result.ok) {
       await persist?.onJudgeComplete(dimension, result.data);
@@ -394,14 +392,19 @@ export async function runDailyNetwork(
     ...(toneResult.ok && { tone: toneResult.data }),
   };
 
+  const judgeErrorDetails = (err: { raw_error?: unknown }): string | undefined =>
+    typeof err.raw_error === "string" ? err.raw_error : undefined;
+
   if (!noveltyResult.ok) {
     return {
       ok: false,
       error: {
         message: noveltyResult.error.message,
         type: noveltyResult.error.type,
+        details: judgeErrorDetails(noveltyResult.error),
       },
       partial,
+      partialMetrics: buildNetworkMetrics(generatorResult, noveltyResult, clarityResult, toneResult),
     };
   }
   if (!clarityResult.ok) {
@@ -410,8 +413,10 @@ export async function runDailyNetwork(
       error: {
         message: clarityResult.error.message,
         type: clarityResult.error.type,
+        details: judgeErrorDetails(clarityResult.error),
       },
       partial,
+      partialMetrics: buildNetworkMetrics(generatorResult, noveltyResult, clarityResult, toneResult),
     };
   }
   if (!toneResult.ok) {
@@ -420,8 +425,10 @@ export async function runDailyNetwork(
       error: {
         message: toneResult.error.message,
         type: toneResult.error.type,
+        details: judgeErrorDetails(toneResult.error),
       },
       partial,
+      partialMetrics: buildNetworkMetrics(generatorResult, noveltyResult, clarityResult, toneResult),
     };
   }
 
@@ -455,6 +462,7 @@ export async function runDailyNetwork(
         type: "invalid_judge_output",
       },
       partial,
+      partialMetrics: buildNetworkMetrics(generatorResult, noveltyResult, clarityResult, toneResult),
     };
   }
 
@@ -518,6 +526,28 @@ export async function runDailyNetwork(
   const winner = allCandidates[0];
   const dailyQuestion = winner.question;
 
+  const metrics = buildNetworkMetrics(generatorResult, noveltyResult, clarityResult, toneResult);
+  return {
+    ok: true,
+    dailyQuestion,
+    allCandidates,
+    aboveBenchmarkIndices,
+    metrics,
+    judgeOutputs: {
+      novelty: noveltyResult.data,
+      clarity: clarityResult.data,
+      tone: toneResult.data,
+    },
+  };
+}
+
+/** Build aggregated metrics from generator + judge results; includes any result that has usage (ok or failed). */
+function buildNetworkMetrics(
+  generatorResult: Awaited<ReturnType<typeof generateQuestions>>,
+  noveltyResult: LlmCallResult<JudgePanelOutput>,
+  clarityResult: LlmCallResult<JudgePanelOutput>,
+  toneResult: LlmCallResult<JudgePanelOutput>
+): NetworkRunMetrics {
   const calls: NetworkCallMetrics[] = [];
   let totalPromptTokens = 0;
   let totalCompletionTokens = 0;
@@ -545,12 +575,12 @@ export async function runDailyNetwork(
     ["judge-clarity", clarityResult],
     ["judge-tone", toneResult],
   ] as const) {
-    if (result.ok) {
-      const u = result.usage;
+    const u = result.usage;
+    if (u && (u.promptTokens != null || u.completionTokens != null || u.totalTokens != null)) {
       const p = result.performanceMetrics?.latencyMs ?? 0;
-      const pt = u?.promptTokens ?? 0;
-      const ct = u?.completionTokens ?? 0;
-      const tt = u?.totalTokens ?? pt + ct;
+      const pt = u.promptTokens ?? 0;
+      const ct = u.completionTokens ?? 0;
+      const tt = u.totalTokens ?? pt + ct;
       totalPromptTokens += pt;
       totalCompletionTokens += ct;
       totalLatencyMs += p;
@@ -564,24 +594,11 @@ export async function runDailyNetwork(
     }
   }
 
-  const metrics: NetworkRunMetrics = {
+  return {
     totalPromptTokens,
     totalCompletionTokens,
     totalTokens: totalPromptTokens + totalCompletionTokens,
     totalLatencyMs,
     calls,
-  };
-
-  return {
-    ok: true,
-    dailyQuestion,
-    allCandidates,
-    aboveBenchmarkIndices,
-    metrics,
-    judgeOutputs: {
-      novelty: noveltyResult.data,
-      clarity: clarityResult.data,
-      tone: toneResult.data,
-    },
   };
 }

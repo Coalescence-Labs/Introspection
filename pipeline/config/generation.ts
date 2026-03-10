@@ -9,7 +9,7 @@ const generationConfigSource = {
 
   postAboveBenchmarkToLibrary: false,
   minAcceptableScore: 24,
-  generatorQuestionCount: 5,
+  generatorQuestionCount: 10,
 
   models: {
     generator: "anthropic/claude-opus-4.6" as GatewayModelId,
