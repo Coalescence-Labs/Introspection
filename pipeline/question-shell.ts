@@ -8,12 +8,18 @@
  *   c         - add/append or replace context (append / replace / clear)
  *   v         - view current context
  *   m         - switch model (numbered list)
+ *   n [date]   - run network (generator → judges → rank); optionally persist to library
  *   q / exit  - quit
  */
 
 import * as readline from "node:readline";
 import type { GatewayModelId } from "ai";
-import { type GenerateQuestionsOutput, generateQuestions } from "./lib/llm";
+import {
+  runDailyNetwork,
+  type CandidateWithScores,
+  type NetworkRunMetrics,
+} from "./lib/generation";
+import { type GenerateQuestionsOutput, generateQuestions, getCurrentDateString, validateDateString } from "./lib/llm";
 import type { LLMGeneratedDailyQuestion } from "./lib/schema";
 import { getLibraryQuestions, insertGeneratedQuestions } from "./lib/supabase/queries";
 
@@ -35,6 +41,7 @@ function printBanner(): void {
   Commands:
     g           Generate 1 question
     g <number>  Generate that many questions (e.g. g 5, max ${MAX_GENERATE})
+    n [date]    Run network (generator → judges → rank); optionally persist to library
     c           Add/replace/clear context for the LLM
     v           View current context
     m           Switch model (numbered list)
@@ -245,6 +252,99 @@ async function runModelSelection(
   return currentModel;
 }
 
+/** Print each candidate with full text and scores in a monospaced block format. */
+function printNetworkSuccess(candidates: CandidateWithScores[]): void {
+  for (let i = 0; i < candidates.length; i++) {
+    const c = candidates[i];
+    const label = i === 0 ? "Candidate 1 (winner)" : `Candidate ${i + 1}`;
+    console.log(`\n  --- ${label} ---`);
+    console.log(`  ${c.question.simple_text}`);
+    console.log(
+      `  combined:  ${c.combinedScore.toFixed(2).padStart(5)}   novelty: ${c.novelty}   clarity: ${c.clarity}   tone: ${c.tone}`
+    );
+  }
+  console.log("");
+}
+
+/** Print metrics at a glance: total tokens, total latency, and per-call breakdown. */
+function printNetworkMetrics(metrics: NetworkRunMetrics): void {
+  const totalTok = metrics.totalTokens;
+  const totalTokStr = totalTok >= 1000 ? `${(totalTok / 1000).toFixed(1)}k` : String(totalTok);
+  const latencySec = (metrics.totalLatencyMs / 1000).toFixed(1);
+  console.log(
+    `  Metrics: ${totalTokStr} tokens (${metrics.totalPromptTokens} in / ${metrics.totalCompletionTokens} out), ${latencySec}s latency`
+  );
+  const parts = metrics.calls.map((c) => {
+    const tok = c.totalTokens ?? (c.promptTokens ?? 0) + (c.completionTokens ?? 0);
+    const tokStr = tok >= 1000 ? `${(tok / 1000).toFixed(1)}k` : String(tok);
+    const lat = c.latencyMs != null ? `${(c.latencyMs / 1000).toFixed(1)}s` : "?";
+    return `${c.operation} ${tokStr} ${lat}`;
+  });
+  console.log(`  Per call: ${parts.join("  |  ")}`);
+}
+
+async function runNetworkAndMaybePersist(
+  rl: readline.Interface,
+  date: string
+): Promise<void> {
+  console.log(`  Running network for date ${date}...`);
+  const result = await runDailyNetwork({ date });
+
+  if (!result.ok) {
+    console.error("  Network failed:", result.error.message, result.error.type ?? "");
+    if (result.partial && result.partial.questions.length > 0) {
+      console.log("  (Partial result has questions but was not saved; use run-network-once.ts with persist for that.)");
+    }
+    return;
+  }
+
+  printNetworkSuccess(result.allCandidates);
+  printNetworkMetrics(result.metrics);
+
+  const answer = await prompt(
+    rl,
+    "  Save to library? Enter indices (e.g. 1 3), 'winner', 'all', or Enter to skip: "
+  );
+  const raw = answer.toLowerCase().trim();
+  if (raw === "") {
+    console.log("  Skipped.");
+    return;
+  }
+
+  let toSave: LLMGeneratedDailyQuestion[] = [];
+  if (raw === "winner") {
+    toSave = [result.allCandidates[0].question];
+  } else if (raw === "all") {
+    toSave = result.allCandidates.map((c) => c.question);
+  } else {
+    const indices = raw.split(/\s+/).map((s) => parseInt(s, 10));
+    for (const oneBased of indices) {
+      if (oneBased >= 1 && oneBased <= result.allCandidates.length) {
+        toSave.push(result.allCandidates[oneBased - 1].question);
+      }
+    }
+  }
+
+  if (toSave.length === 0) {
+    console.log("  No valid selection; skipped.");
+    return;
+  }
+
+  try {
+    const ids = await insertGeneratedQuestions({
+      questions: toSave.map((q) => ({
+        category: q.category,
+        simple_text: q.simple_text,
+        tags: [],
+        cadence: "daily",
+      })),
+    });
+    console.log(`  Saved to library: ${ids.length} question(s). IDs: ${ids.join(", ")}`);
+  } catch (err) {
+    console.error("  Supabase insert failed:", err);
+  }
+}
+
 async function main(): Promise<void> {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   let currentModel: GatewayModelId = ALLOWED_MODELS[0].id;
@@ -317,7 +417,20 @@ async function main(): Promise<void> {
         return;
       }
 
-      console.log("  Unknown command. Use g, g <n>, c, v, m, or q/exit.");
+      if (cmd === "n") {
+        const dateArg = parts[1];
+        const date = dateArg ? dateArg : getCurrentDateString();
+        if (!validateDateString(date)) {
+          console.log("  Invalid date format, use YYYY-MM-DD");
+          loop();
+          return;
+        }
+        await runNetworkAndMaybePersist(rl, date);
+        loop();
+        return;
+      }
+
+      console.log("  Unknown command. Use g, g <n>, n [date], c, v, m, or q/exit.");
       loop();
     });
   };

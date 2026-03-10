@@ -50,6 +50,24 @@ export interface CandidateWithScores {
   tone: number;
 }
 
+/** Per-call metrics (generator or one judge). */
+export interface NetworkCallMetrics {
+  operation: string;
+  promptTokens?: number;
+  completionTokens?: number;
+  totalTokens?: number;
+  latencyMs?: number;
+}
+
+/** Aggregated metrics for a full network run. */
+export interface NetworkRunMetrics {
+  totalPromptTokens: number;
+  totalCompletionTokens: number;
+  totalTokens: number;
+  totalLatencyMs: number;
+  calls: NetworkCallMetrics[];
+}
+
 /** Partial result available on failure so the caller can persist and not lose data. */
 export interface PartialNetworkResult {
   questions: LLMGeneratedDailyQuestion[];
@@ -64,6 +82,7 @@ export type RunDailyNetworkResult =
       dailyQuestion: LLMGeneratedDailyQuestion;
       allCandidates: CandidateWithScores[];
       aboveBenchmarkIndices: number[];
+      metrics: NetworkRunMetrics;
     }
   | {
       ok: false;
@@ -345,10 +364,65 @@ export async function runDailyNetwork(
   const winner = allCandidates[0];
   const dailyQuestion = winner.question;
 
+  const calls: NetworkCallMetrics[] = [];
+  let totalPromptTokens = 0;
+  let totalCompletionTokens = 0;
+  let totalLatencyMs = 0;
+
+  if (generatorResult.ok) {
+    const u = generatorResult.usage;
+    const p = generatorResult.performanceMetrics?.latencyMs ?? 0;
+    const pt = u?.promptTokens ?? 0;
+    const ct = u?.completionTokens ?? 0;
+    const tt = u?.totalTokens ?? pt + ct;
+    totalPromptTokens += pt;
+    totalCompletionTokens += ct;
+    totalLatencyMs += p;
+    calls.push({
+      operation: "generator",
+      promptTokens: pt,
+      completionTokens: ct,
+      totalTokens: tt,
+      latencyMs: p,
+    });
+  }
+  for (const [label, result] of [
+    ["judge-novelty", noveltyResult],
+    ["judge-clarity", clarityResult],
+    ["judge-tone", toneResult],
+  ] as const) {
+    if (result.ok) {
+      const u = result.usage;
+      const p = result.performanceMetrics?.latencyMs ?? 0;
+      const pt = u?.promptTokens ?? 0;
+      const ct = u?.completionTokens ?? 0;
+      const tt = u?.totalTokens ?? pt + ct;
+      totalPromptTokens += pt;
+      totalCompletionTokens += ct;
+      totalLatencyMs += p;
+      calls.push({
+        operation: label,
+        promptTokens: pt,
+        completionTokens: ct,
+        totalTokens: tt,
+        latencyMs: p,
+      });
+    }
+  }
+
+  const metrics: NetworkRunMetrics = {
+    totalPromptTokens,
+    totalCompletionTokens,
+    totalTokens: totalPromptTokens + totalCompletionTokens,
+    totalLatencyMs,
+    calls,
+  };
+
   return {
     ok: true,
     dailyQuestion,
     allCandidates,
     aboveBenchmarkIndices,
+    metrics,
   };
 }

@@ -118,6 +118,7 @@ test("runDailyNetwork returns shape and compile/rank/benchmark", async () => {
       modelId: "openai/gpt-5.2",
       runId: undefined,
       usage: { promptTokens: 10, completionTokens: 20, totalTokens: 30 },
+      performanceMetrics: { latencyMs: 50 },
     }),
   }));
 
@@ -140,6 +141,7 @@ test("runDailyNetwork returns shape and compile/rank/benchmark", async () => {
         data: makeJudgeOutput(scores) as T,
         modelId: "openai/gpt-5.2",
         runId: undefined,
+        usage: { promptTokens: 50, completionTokens: 100, totalTokens: 150 },
         performanceMetrics: { latencyMs: 100 },
       };
     },
@@ -154,6 +156,10 @@ test("runDailyNetwork returns shape and compile/rank/benchmark", async () => {
   expect(result.allCandidates).toHaveLength(5);
   expect(result.aboveBenchmarkIndices).toBeDefined();
   expect(Array.isArray(result.aboveBenchmarkIndices)).toBe(true);
+  expect(result.metrics).toBeDefined();
+  expect(result.metrics.totalTokens).toBe(30 + 150 * 3);
+  expect(result.metrics.calls).toHaveLength(4);
+  expect(result.metrics.totalLatencyMs).toBe(50 + 100 * 3);
 
   for (const c of result.allCandidates) {
     expect(c).toHaveProperty("question");
