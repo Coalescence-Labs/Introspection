@@ -24,7 +24,7 @@ export const JudgeScoreSchema = z.object({
     .number()
     .int()
     .min(0)
-    .max(19)
+    .max(49)
     .describe("Zero-based index of the generated question being evaluated."),
   score: JudgeScoreValueSchema.describe(
     "Judge score from 0 to 10 using the rubric documented above."
@@ -46,7 +46,7 @@ export const JudgePanelOutputSchema = z.object({
   scores: z
     .array(JudgeScoreSchema)
     .min(1)
-    .max(20)
+    .max(50)
     .describe("One score entry per generated candidate question."),
 });
 

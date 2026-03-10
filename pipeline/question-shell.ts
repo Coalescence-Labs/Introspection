@@ -8,23 +8,29 @@
  *   c         - add/append or replace context (append / replace / clear)
  *   v         - view current context
  *   m         - switch model (numbered list)
- *   n [date]   - run network (generator → judges → rank); optionally persist to library
+ *   n [date] [count] - run network (generator → judges → rank), count 1–50; optionally persist to library
  *   q / exit  - quit
  */
 
+import { mkdir, writeFile } from "node:fs/promises";
 import * as readline from "node:readline";
+import { dirname, join } from "node:path";
 import type { GatewayModelId } from "ai";
 import {
   runDailyNetwork,
   type CandidateWithScores,
   type NetworkRunMetrics,
+  type PartialNetworkResult,
 } from "./lib/generation";
 import { type GenerateQuestionsOutput, generateQuestions, getCurrentDateString, validateDateString } from "./lib/llm";
 import type { LLMGeneratedDailyQuestion } from "./lib/schema";
 import { getLibraryQuestions, insertGeneratedQuestions } from "./lib/supabase/queries";
 
+const OUTPUT_DIR = join(import.meta.dir, "output");
+
 const LIBRARY_CONTEXT_LIMIT = 50;
 const MAX_GENERATE = 20;
+const MAX_NETWORK_COUNT = 50;
 
 const ALLOWED_MODELS: { label: string; id: GatewayModelId }[] = [
   { label: "gpt-5.2", id: "openai/gpt-5.2" as GatewayModelId },
@@ -41,7 +47,7 @@ function printBanner(): void {
   Commands:
     g           Generate 1 question
     g <number>  Generate that many questions (e.g. g 5, max ${MAX_GENERATE})
-    n [date]    Run network (generator → judges → rank); optionally persist to library
+    n [date] [count]  Run network (count 1–50); optionally persist to library
     c           Add/replace/clear context for the LLM
     v           View current context
     m           Switch model (numbered list)
@@ -285,10 +291,13 @@ function printNetworkMetrics(metrics: NetworkRunMetrics): void {
 
 async function runNetworkAndMaybePersist(
   rl: readline.Interface,
-  date: string
+  date: string,
+  questionCount?: number
 ): Promise<void> {
-  console.log(`  Running network for date ${date}...`);
-  const result = await runDailyNetwork({ date });
+  const countDesc =
+    questionCount != null ? ` (${questionCount} question${questionCount === 1 ? "" : "s"})` : "";
+  console.log(`  Running network for date ${date}${countDesc}...`);
+  const result = await runDailyNetwork({ date, questionCount });
 
   if (!result.ok) {
     console.error("  Network failed:", result.error.message, result.error.type ?? "");
@@ -418,19 +427,45 @@ async function main(): Promise<void> {
       }
 
       if (cmd === "n") {
-        const dateArg = parts[1];
-        const date = dateArg ? dateArg : getCurrentDateString();
-        if (!validateDateString(date)) {
-          console.log("  Invalid date format, use YYYY-MM-DD");
-          loop();
-          return;
+        const arg1 = parts[1];
+        const arg2 = parts[2];
+        let date: string;
+        let questionCount: number | undefined;
+        if (arg1 == null) {
+          date = getCurrentDateString();
+        } else if (arg2 != null) {
+          date = arg1;
+          const n = parseInt(arg2, 10);
+          if (!validateDateString(date)) {
+            console.log("  Invalid date format, use YYYY-MM-DD");
+            loop();
+            return;
+          }
+          if (!Number.isFinite(n) || n < 1 || n > MAX_NETWORK_COUNT) {
+            console.log(`  Invalid count; use 1–${MAX_NETWORK_COUNT}`);
+            loop();
+            return;
+          }
+          questionCount = n;
+        } else if (validateDateString(arg1)) {
+          date = arg1;
+        } else {
+          const n = parseInt(arg1, 10);
+          if (Number.isFinite(n) && n >= 1 && n <= MAX_NETWORK_COUNT) {
+            date = getCurrentDateString();
+            questionCount = n;
+          } else {
+            console.log(`  Invalid date or count; use YYYY-MM-DD or 1–${MAX_NETWORK_COUNT}`);
+            loop();
+            return;
+          }
         }
-        await runNetworkAndMaybePersist(rl, date);
+        await runNetworkAndMaybePersist(rl, date, questionCount);
         loop();
         return;
       }
 
-      console.log("  Unknown command. Use g, g <n>, n [date], c, v, m, or q/exit.");
+      console.log("  Unknown command. Use g, g <n>, n [date] [count], c, v, m, or q/exit.");
       loop();
     });
   };

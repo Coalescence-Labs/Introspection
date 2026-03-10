@@ -121,7 +121,7 @@ export type GenerateQuestionsOutput = LlmCallResult<LLMGeneratedDailyQuestion[]>
 export async function generateQuestions(
   input: GenerateQuestionsInput
 ): Promise<GenerateQuestionsOutput> {
-  const count = Math.min(Math.max(1, input.count ?? 5), 20);
+  const count = Math.min(Math.max(1, input.count ?? 5), 50);
   const modelId = input.model ?? DEFAULT_MODEL;
 
   const startPromptGeneration = performance.now();

@@ -37,6 +37,8 @@ export interface RunDailyNetworkInput {
   date: string;
   context?: string;
   runId?: string;
+  /** Override how many questions to generate (capped by generator/judge limits). If omitted, uses config.generatorQuestionCount. */
+  questionCount?: number;
   /** If provided, called after generator succeeds and after each judge succeeds. */
   persist?: RunDailyNetworkPersist;
 }
@@ -83,6 +85,12 @@ export type RunDailyNetworkResult =
       allCandidates: CandidateWithScores[];
       aboveBenchmarkIndices: number[];
       metrics: NetworkRunMetrics;
+      /** Raw judge outputs (scores + rationale per question) for recap/audit. */
+      judgeOutputs: {
+        novelty: JudgePanelOutput;
+        clarity: JudgePanelOutput;
+        tone: JudgePanelOutput;
+      };
     }
   | {
       ok: false;
@@ -218,7 +226,10 @@ export async function runDailyNetwork(
   input: RunDailyNetworkInput
 ): Promise<RunDailyNetworkResult> {
   const config = generationConfig;
-  const count = config.generatorQuestionCount;
+  const count =
+    input.questionCount != null
+      ? Math.min(Math.max(1, input.questionCount), 50)
+      : config.generatorQuestionCount;
   const { context, runId } = input;
 
   const generatorResult = await generateQuestions({
@@ -424,5 +435,10 @@ export async function runDailyNetwork(
     allCandidates,
     aboveBenchmarkIndices,
     metrics,
+    judgeOutputs: {
+      novelty: noveltyResult.data,
+      clarity: clarityResult.data,
+      tone: toneResult.data,
+    },
   };
 }
