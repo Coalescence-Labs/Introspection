@@ -124,10 +124,10 @@ test("generateDailyQuestion preserves failure from wrapper", async () => {
   expect(badResult.error.message).toContain("Failed to generate");
 });
 
-test("generateQuestions clamps count to 1..20", async () => {
+test("generateQuestions clamps count to 1..50", async () => {
   generateTextResults.length = 0;
   const oneQuestion: LLMGeneratedDailyQuestion[] = [{ category: "reflection", simple_text: "Q1?" }];
-  const twentyQuestions: LLMGeneratedDailyQuestion[] = Array.from({ length: 20 }, (_, i) => ({
+  const fiftyQuestions: LLMGeneratedDailyQuestion[] = Array.from({ length: 50 }, (_, i) => ({
     category: "reflection" as const,
     simple_text: `Q${i + 1}?`,
   }));
@@ -137,7 +137,7 @@ test("generateQuestions clamps count to 1..20", async () => {
     totalUsage: { inputTokens: 1, outputTokens: 2, totalTokens: 3 },
   });
   generateTextResults.push({
-    output: { questions: twentyQuestions },
+    output: { questions: fiftyQuestions },
     text: "raw",
     totalUsage: { inputTokens: 1, outputTokens: 2, totalTokens: 3 },
   });
@@ -150,7 +150,7 @@ test("generateQuestions clamps count to 1..20", async () => {
   const resultHuge = await generateQuestions({ count: 100 });
   expect(resultHuge.ok).toBe(true);
   if (!resultHuge.ok) return;
-  expect((resultHuge.data as unknown[]).length).toBe(20);
+  expect((resultHuge.data as unknown[]).length).toBe(50);
 });
 
 test("generateQuestions unwraps questions array from parsed result", async () => {

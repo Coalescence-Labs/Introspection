@@ -21,12 +21,63 @@ import {
   type CandidateWithScores,
   type NetworkRunMetrics,
   type PartialNetworkResult,
+  type RunDailyNetworkResult,
 } from "./lib/generation";
 import { type GenerateQuestionsOutput, generateQuestions, getCurrentDateString, validateDateString } from "./lib/llm";
 import type { LLMGeneratedDailyQuestion } from "./lib/schema";
 import { getLibraryQuestions, insertGeneratedQuestions } from "./lib/supabase/queries";
 
 const OUTPUT_DIR = join(import.meta.dir, "output");
+
+/** Build recap payload and write a timestamped JSON file under pipeline/output/. */
+async function writeRecapFile(
+  date: string,
+  requestedCount: number | undefined,
+  result: RunDailyNetworkResult
+): Promise<string | null> {
+  const savedAt = new Date().toISOString();
+  const questions =
+    result.ok ? result.allCandidates.map((c) => c.question) : result.partial?.questions ?? [];
+  if (questions.length === 0) return null;
+
+  const payload: Record<string, unknown> = {
+    savedAt,
+    date,
+    requestedCount: requestedCount ?? null,
+    actualCount: questions.length,
+    questions: questions.map((q, i) => ({ questionIndex: i, category: q.category, simple_text: q.simple_text })),
+    judges:
+      result.ok
+        ? result.judgeOutputs
+        : {
+            ...(result.partial?.novelty && { novelty: result.partial.novelty }),
+            ...(result.partial?.clarity && { clarity: result.partial.clarity }),
+            ...(result.partial?.tone && { tone: result.partial.tone }),
+          },
+  };
+
+  if (result.ok) {
+    payload.rankedCandidates = result.allCandidates.map((c) => ({
+      questionIndex: c.questionIndex,
+      combinedScore: c.combinedScore,
+      novelty: c.novelty,
+      clarity: c.clarity,
+      tone: c.tone,
+      question: c.question,
+    }));
+    payload.winner = result.dailyQuestion;
+    payload.aboveBenchmarkIndices = result.aboveBenchmarkIndices;
+    payload.metrics = result.metrics;
+  } else {
+    payload.partial = true;
+  }
+
+  const safeTimestamp = savedAt.replace(/:/g, "-");
+  const path = join(OUTPUT_DIR, `network-recap-${safeTimestamp}.json`);
+  await mkdir(dirname(path), { recursive: true });
+  await writeFile(path, JSON.stringify(payload, null, 2), "utf8");
+  return path;
+}
 
 const LIBRARY_CONTEXT_LIMIT = 50;
 const MAX_GENERATE = 20;
@@ -298,6 +349,13 @@ async function runNetworkAndMaybePersist(
     questionCount != null ? ` (${questionCount} question${questionCount === 1 ? "" : "s"})` : "";
   console.log(`  Running network for date ${date}${countDesc}...`);
   const result = await runDailyNetwork({ date, questionCount });
+
+  try {
+    const recapPath = await writeRecapFile(date, questionCount, result);
+    if (recapPath) console.log("  Recap written to", recapPath);
+  } catch (err) {
+    console.warn("  Failed to write recap:", err);
+  }
 
   if (!result.ok) {
     console.error("  Network failed:", result.error.message, result.error.type ?? "");

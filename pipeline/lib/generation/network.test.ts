@@ -187,4 +187,51 @@ test("runDailyNetwork returns shape and compile/rank/benchmark", async () => {
   );
   expect(sortedByScore[0].combinedScore).toBe(expectedCombined(4));
   expect(sortedByScore[4].combinedScore).toBe(expectedCombined(0));
+
+  expect(result.judgeOutputs).toBeDefined();
+  expect(result.judgeOutputs.novelty.scores).toHaveLength(5);
+  expect(result.judgeOutputs.clarity.scores).toHaveLength(5);
+  expect(result.judgeOutputs.tone.scores).toHaveLength(5);
+});
+
+test("runDailyNetwork with questionCount override uses that count and returns judgeOutputs", async () => {
+  const twoQuestions: LLMGeneratedDailyQuestion[] = [
+    { category: "reflection", simple_text: "A?" },
+    { category: "learning", simple_text: "B?" },
+  ];
+  mock.module("../llm", () => ({
+    generateQuestions: async () => ({
+      ok: true as const,
+      data: twoQuestions,
+      modelId: "openai/gpt-5.2",
+      runId: undefined,
+      usage: { promptTokens: 10, completionTokens: 20, totalTokens: 30 },
+      performanceMetrics: { latencyMs: 50 },
+    }),
+  }));
+
+  mock.module("../llm-metrics", () => ({
+    executeLlmCall: async <T>(input: { operation: string }) => {
+      const scores = [7, 8].map((score, questionIndex) => ({ questionIndex, score }));
+      return {
+        ok: true as const,
+        data: makeJudgeOutput(scores) as T,
+        modelId: "openai/gpt-5.2",
+        runId: undefined,
+        usage: { promptTokens: 50, completionTokens: 100, totalTokens: 150 },
+        performanceMetrics: { latencyMs: 100 },
+      };
+    },
+  }));
+
+  const { runDailyNetwork: runWithMock } = await import("./network");
+  const result = await runWithMock({ date: "2025-03-10", questionCount: 2 });
+
+  expect(result.ok).toBe(true);
+  if (!result.ok) return;
+  expect(result.allCandidates).toHaveLength(2);
+  expect(result.dailyQuestion.simple_text).toBe("B?"); // higher combined 8+8+8
+  expect(result.judgeOutputs.novelty.scores).toHaveLength(2);
+  expect(result.judgeOutputs.clarity.scores).toHaveLength(2);
+  expect(result.judgeOutputs.tone.scores).toHaveLength(2);
 });
