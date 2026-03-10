@@ -126,6 +126,13 @@ Designed for [Vercel](https://vercel.com) with zero config. See **[DEPLOYMENT.md
 - [ ] Custom question creation
 - [ ] Browser extension support
 
+## Development
+
+See project development documentation:
+
+- [Branching Strategy](docs/branching.md)
+- [Release Process](docs/releases.md)
+
 ## Contributing
 
 Ideas, feedback, and contributions are welcome.
