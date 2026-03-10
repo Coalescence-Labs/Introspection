@@ -1,8 +1,5 @@
 import type { GatewayModelId } from "ai";
-import {
-  GenerationConfigSchema,
-  type GenerationConfig,
-} from "../schemas/generation-config";
+import { type GenerationConfig, GenerationConfigSchema } from "../schemas/generation-config";
 
 const generationConfigSource = {
   networkEnabled: false,
@@ -25,6 +22,4 @@ const generationConfigSource = {
   },
 } satisfies GenerationConfig;
 
-export const generationConfig = GenerationConfigSchema.parse(
-  generationConfigSource
-);
+export const generationConfig = GenerationConfigSchema.parse(generationConfigSource);

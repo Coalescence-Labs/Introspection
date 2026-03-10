@@ -4,16 +4,29 @@
  * Requires SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, and LLM gateway env (e.g. AI gateway key).
  */
 
-import { QuestionFeaturedHistory } from "@/lib/content/schema";
-import { generateDailyQuestion, type GenerateDailyQuestionOutput, getCurrentDateString, validateDateString } from "./lib/llm";
-import { getRecentDailyQuestions, getRunByDate, hasRunForDate, insertGeneratedQuestion, recordRunResult, recordRunStart, setDailyQuestion } from "./lib/supabase/queries";
-import { LLMGeneratedDailyQuestion } from "./lib/schema";
-import { PostgrestError } from "@supabase/supabase-js";
-import { GatewayModelId } from "ai";
+import type { PostgrestError } from "@supabase/supabase-js";
+import type { GatewayModelId } from "ai";
+import type { QuestionFeaturedHistory } from "@/lib/content/schema";
+import {
+  type GenerateDailyQuestionOutput,
+  generateDailyQuestion,
+  getCurrentDateString,
+  validateDateString,
+} from "./lib/llm";
+import type { LLMGeneratedDailyQuestion } from "./lib/schema";
+import {
+  getRecentDailyQuestions,
+  getRunByDate,
+  hasRunForDate,
+  insertGeneratedQuestion,
+  recordRunResult,
+  recordRunStart,
+  setDailyQuestion,
+} from "./lib/supabase/queries";
 
 let runId: string | null = null;
 const modelId: GatewayModelId = "openai/gpt-5.2";
-let targetDate: string | undefined = undefined;
+let targetDate: string | undefined;
 
 async function main() {
   /***
@@ -30,10 +43,9 @@ async function main() {
     process.exit(1);
   }
 
-
   /**
    * 2. Record run start in supabase
-   * Supabase has a unique constraint on date, 
+   * Supabase has a unique constraint on date,
    * ensuring that idempotency per date
    */
   try {
@@ -43,7 +55,7 @@ async function main() {
     }
   } catch (error) {
     if ((error as PostgrestError).code === "23505") {
-      console.error(`Run already recorded for ${targetDate}`)
+      console.error(`Run already recorded for ${targetDate}`);
 
       const run = await getRunByDate(targetDate);
       if (run) {
@@ -51,11 +63,16 @@ async function main() {
         switch (run.status) {
           case "error":
             console.log(`Retrying failed run for ${targetDate} with model ${run.model}`);
-            await recordRunResult({ date: targetDate, status: "started", model: run.model, runId: run.id });
+            await recordRunResult({
+              date: targetDate,
+              status: "started",
+              model: run.model,
+              runId: run.id,
+            });
             break;
           case "success":
             console.log(`Run already successful for ${targetDate}`);
-            process.exit(0)
+            process.exit(0);
             break;
           case "started":
             console.log(`Run already started for ${targetDate}`);
@@ -87,19 +104,21 @@ async function main() {
     if (recentDailyQuestions.length === 0) {
       console.log("No recent daily questions found");
     } else {
-        console.log("")
+      console.log("");
     }
   } catch {
     console.warn("Failed to get recent daily questions, continuing with empty context");
-    recentDailyQuestions = []
+    recentDailyQuestions = [];
   }
 
   let context = "";
 
   if (recentDailyQuestions.length > 0) {
-  context = `Recent daily questions:\n`;
-  
-  context += recentDailyQuestions.map((question) => `- ${question.question.simple_text}`).join("\n");
+    context = `Recent daily questions:\n`;
+
+    context += recentDailyQuestions
+      .map((question) => `- ${question.question.simple_text}`)
+      .join("\n");
   }
 
   /**
@@ -107,7 +126,12 @@ async function main() {
    */
   let generatedQuestion: GenerateDailyQuestionOutput | null = null;
   try {
-    generatedQuestion = await generateDailyQuestion({ date: targetDate, runId, context, model: modelId });
+    generatedQuestion = await generateDailyQuestion({
+      date: targetDate,
+      runId,
+      context,
+      model: modelId,
+    });
   } catch {
     generatedQuestion = null;
   }
@@ -117,7 +141,10 @@ async function main() {
    */
   if (!generatedQuestion?.ok) {
     console.error("Run ID", runId);
-    console.error("Failed to generate daily question", JSON.stringify(generatedQuestion?.error, null, 2));
+    console.error(
+      "Failed to generate daily question",
+      JSON.stringify(generatedQuestion?.error, null, 2)
+    );
 
     // Clean up run
     await recordRunResult({ date: targetDate, status: "error", model: modelId, runId });
@@ -141,8 +168,17 @@ async function main() {
       throw new Error("Failed to insert generated question");
     }
   } catch {
-    console.error("Failed to insert generated question", JSON.stringify(generatedQuestionData, null, 2));
-    await recordRunResult({ date: targetDate, status: "error", model: modelId, runId, notes: `Failed to insert generated question: ${JSON.stringify(generatedQuestionData, null, 2)}` });
+    console.error(
+      "Failed to insert generated question",
+      JSON.stringify(generatedQuestionData, null, 2)
+    );
+    await recordRunResult({
+      date: targetDate,
+      status: "error",
+      model: modelId,
+      runId,
+      notes: `Failed to insert generated question: ${JSON.stringify(generatedQuestionData, null, 2)}`,
+    });
     process.exit(1);
   }
 
@@ -159,24 +195,36 @@ async function main() {
     await setDailyQuestion({ questionId });
   } catch {
     console.error("Failed to set daily question", questionId);
-    await recordRunResult({ date: targetDate, status: "error", model: modelId, runId, notes: `Failed to set daily question: ${questionId}` });
+    await recordRunResult({
+      date: targetDate,
+      status: "error",
+      model: modelId,
+      runId,
+      notes: `Failed to set daily question: ${questionId}`,
+    });
     process.exit(1);
   }
 
   /**
    * 7. Record run result in supabase
    */
-    for (let i = 0; i < 3; i++) {
-      try {
-        let notes = `Generated question: ${generatedQuestionData.simple_text}`;
-        notes += `\nContext: ${context}`;
-        await recordRunResult({ date: targetDate, status: "success", model: generatedQuestion.modelId ?? "unknown", runId, notes });
-        break;
-      } catch {
-        console.error(`Failed to record run result on attempt ${i + 1}`);
-        await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, i)));
-      }
+  for (let i = 0; i < 3; i++) {
+    try {
+      let notes = `Generated question: ${generatedQuestionData.simple_text}`;
+      notes += `\nContext: ${context}`;
+      await recordRunResult({
+        date: targetDate,
+        status: "success",
+        model: generatedQuestion.modelId ?? "unknown",
+        runId,
+        notes,
+      });
+      break;
+    } catch {
+      console.error(`Failed to record run result on attempt ${i + 1}`);
+      await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** i));
     }
+  }
 
   console.log("Daily question set successfully", questionId);
   process.exit(0);
@@ -184,7 +232,12 @@ async function main() {
 
 main().catch(async (error) => {
   try {
-    await recordRunResult({ status: "error", model: "unknown", date: targetDate, runId: runId ?? "" });
+    await recordRunResult({
+      status: "error",
+      model: "unknown",
+      date: targetDate,
+      runId: runId ?? "",
+    });
   } catch {
     console.error("Failed to record run result on error");
   }

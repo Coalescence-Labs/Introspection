@@ -12,10 +12,10 @@
  */
 
 import * as readline from "node:readline";
-import { GatewayModelId } from "ai";
-import { generateQuestions, type GenerateQuestionsOutput } from "./lib/llm";
-import { getLibraryQuestions, insertGeneratedQuestions } from "./lib/supabase/queries";
+import type { GatewayModelId } from "ai";
+import { type GenerateQuestionsOutput, generateQuestions } from "./lib/llm";
 import type { LLMGeneratedDailyQuestion } from "./lib/schema";
+import { getLibraryQuestions, insertGeneratedQuestions } from "./lib/supabase/queries";
 
 const LIBRARY_CONTEXT_LIMIT = 50;
 const MAX_GENERATE = 20;
@@ -201,10 +201,7 @@ function printCurrentContext(context: string): void {
 
 async function runContextMode(rl: readline.Interface, additionalContext: string): Promise<string> {
   printCurrentContext(additionalContext);
-  const action = await prompt(
-    rl,
-    "  Append (a) / Replace (r) / Clear (c)? [a/r/c]: "
-  );
+  const action = await prompt(rl, "  Append (a) / Replace (r) / Clear (c)? [a/r/c]: ");
   const choice = action.toLowerCase().trim();
   if (choice === "c" || choice === "clear") {
     console.log("  Context cleared.");
@@ -269,7 +266,9 @@ async function main(): Promise<void> {
 
       if (cmd === "g") {
         const countArg = parts[1];
-        const count = countArg ? Math.min(MAX_GENERATE, Math.max(1, parseInt(countArg, 10) || 1)) : 1;
+        const count = countArg
+          ? Math.min(MAX_GENERATE, Math.max(1, parseInt(countArg, 10) || 1))
+          : 1;
         const { approvedTexts, deniedTexts } = await runGenerateAndApproval(
           rl,
           currentModel,

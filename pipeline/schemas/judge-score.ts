@@ -35,9 +35,7 @@ export const JudgeScoreSchema = z.object({
     .min(1)
     .max(300)
     .optional()
-    .describe(
-      "Optional short explanation for the score, primarily for debugging or audit logs."
-    ),
+    .describe("Optional short explanation for the score, primarily for debugging or audit logs."),
 });
 
 /**

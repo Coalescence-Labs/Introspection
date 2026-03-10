@@ -1,7 +1,7 @@
-import type { GatewayModelId } from "ai";
-import { NoObjectGeneratedError } from "ai";
 import { appendFile, mkdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
+import type { GatewayModelId } from "ai";
+import { NoObjectGeneratedError } from "ai";
 
 export type ErrorType =
   | "invalid_input"
@@ -120,22 +120,24 @@ function extractField(
 }
 
 function normalizeError(error: unknown, fallbackMessage: string): LlmCallError {
-  const message =
-    error instanceof Error && error.message ? error.message : fallbackMessage;
+  const message = error instanceof Error && error.message ? error.message : fallbackMessage;
 
   return {
     message: fallbackMessage,
     type: "model_error",
-    code: typeof extractField(error, "code") === "number"
-      ? (extractField(error, "code") as number)
-      : undefined,
-    param: typeof extractField(error, "param") === "string"
-      ? (extractField(error, "param") as string)
-      : undefined,
-    value: typeof extractField(error, "value") === "string"
-      ? (extractField(error, "value") as string)
-      : undefined,
-    raw_error: error instanceof Error ? error : error ?? message,
+    code:
+      typeof extractField(error, "code") === "number"
+        ? (extractField(error, "code") as number)
+        : undefined,
+    param:
+      typeof extractField(error, "param") === "string"
+        ? (extractField(error, "param") as string)
+        : undefined,
+    value:
+      typeof extractField(error, "value") === "string"
+        ? (extractField(error, "value") as string)
+        : undefined,
+    raw_error: error instanceof Error ? error : (error ?? message),
   };
 }
 

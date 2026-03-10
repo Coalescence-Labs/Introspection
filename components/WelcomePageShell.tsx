@@ -4,10 +4,10 @@ import { useRef } from "react";
 import { ParticleField } from "@/components/ParticleField";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { WelcomeContent } from "@/components/WelcomeContent";
+import { welcomeSections } from "@/components/welcome-sections";
 import { WelcomeScrollContext } from "@/lib/contexts/welcome-scroll-context";
 import { useCustomScroll } from "@/lib/hooks/useCustomScroll";
 import { useTouchDevice } from "@/lib/hooks/useTouchDevice";
-import { welcomeSections } from "@/components/welcome-sections";
 
 /**
  * Welcome (landing) page: particle background, section-based scroll, theme toggle.

@@ -2,8 +2,8 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Copy } from "lucide-react";
-import { useCopy } from "@/lib/hooks/useCopy";
 import { Button } from "@/components/ui/button";
+import { useCopy } from "@/lib/hooks/useCopy";
 
 // Corner sparkle components for success animation
 function CornerSparkle({ corner, delay }: { corner: "top-right" | "bottom-left"; delay: number }) {

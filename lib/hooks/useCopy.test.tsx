@@ -1,16 +1,10 @@
+import { expect, mock, test } from "bun:test";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { test, expect, mock } from "bun:test";
 import React from "react";
 import { useCopy } from "./useCopy";
 
-function TestHarness({
-  text,
-  onCopy,
-}: {
-  text: string;
-  onCopy?: () => void;
-}) {
+function TestHarness({ text, onCopy }: { text: string; onCopy?: () => void }) {
   const { copied, handleCopy } = useCopy({ text, onCopy });
   return (
     <div>

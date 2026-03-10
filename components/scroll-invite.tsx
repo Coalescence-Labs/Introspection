@@ -73,10 +73,10 @@ export function ScrollInvite({
         transition={
           phase === 2
             ? {
-              duration: 1.8,
-              repeat: Number.POSITIVE_INFINITY,
-              ease: [0.22, 1, 0.36, 1],
-            }
+                duration: 1.8,
+                repeat: Number.POSITIVE_INFINITY,
+                ease: [0.22, 1, 0.36, 1],
+              }
             : { duration: 0.3 }
         }
       >

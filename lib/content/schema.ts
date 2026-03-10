@@ -120,7 +120,6 @@ export const MappedQuestion = z.object({
 });
 export type MappedQuestion = z.infer<typeof MappedQuestion>;
 
-
 export const QuestionFeaturedHistory = z.object({
   questionId: z.string(),
   featuredDate: z.string(),

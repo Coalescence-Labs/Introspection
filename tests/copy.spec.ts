@@ -24,9 +24,7 @@ test.describe("Copy functionality", () => {
 
     await expect(page.getByText("Copied!")).toBeVisible({ timeout: 5000 });
 
-    const clipboardText = await page.evaluate(() =>
-      navigator.clipboard.readText()
-    );
+    const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
     expectPlainString(clipboardText);
     expect(clipboardText.trim().length).toBeGreaterThan(0);
   });
@@ -47,9 +45,9 @@ test.describe("Copy functionality", () => {
     page,
   }) => {
     await page.goto("/library", { waitUntil: "networkidle" });
-    await expect(
-      page.getByRole("heading", { name: /question library/i })
-    ).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("heading", { name: /question library/i })).toBeVisible({
+      timeout: 10000,
+    });
 
     // Copy icon is revealed on card hover; find first question card and hover to show the copy button
     const firstCard = page.locator('[class*="border-l-accent"]').first();
@@ -60,9 +58,7 @@ test.describe("Copy functionality", () => {
     await expect(copyButtonInCard).toBeVisible({ timeout: 5000 });
     await copyButtonInCard.click();
 
-    const clipboardText = await page.evaluate(() =>
-      navigator.clipboard.readText()
-    );
+    const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
     expectPlainString(clipboardText);
     expect(clipboardText.trim().length).toBeGreaterThan(0);
   });
@@ -75,9 +71,7 @@ test.describe("Copy functionality", () => {
     await expect(copyButton).toBeVisible({ timeout: 10000 });
     await copyButton.click();
 
-    const clipboardText = await page.evaluate(() =>
-      navigator.clipboard.readText()
-    );
+    const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
     expect(clipboardText).not.toMatch(/<[^>]+>/);
     expect(typeof clipboardText).toBe("string");
   });

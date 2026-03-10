@@ -1,5 +1,5 @@
-import { GatewayModelId } from "ai";
-import { generateQuestions, type GenerateQuestionsOutput } from "./lib/llm";
+import type { GatewayModelId } from "ai";
+import { type GenerateQuestionsOutput, generateQuestions } from "./lib/llm";
 import { getLibraryQuestions, insertGeneratedQuestions } from "./lib/supabase/queries";
 
 const COUNT = 5;
@@ -57,7 +57,9 @@ async function main() {
   if (dryRun) {
     console.log("(dry run — no insert)\n");
     result.data.forEach((q, i) => {
-      console.log(`[${i + 1}/${result.data.length}] Would insert: ${q.simple_text} [${q.category}]`);
+      console.log(
+        `[${i + 1}/${result.data.length}] Would insert: ${q.simple_text} [${q.category}]`
+      );
     });
     console.log(`\nDry run complete. Would add ${result.data.length} questions to the library.`);
     return;
@@ -81,7 +83,9 @@ async function main() {
   result.data.forEach((q, i) => {
     console.log(`[${i + 1}/${result.data.length}] Inserted: ${q.simple_text} (${insertedIds[i]})`);
   });
-  console.log(`\nDone. Added ${insertedIds.length} questions to the library. IDs: ${insertedIds.join(", ")}`);
+  console.log(
+    `\nDone. Added ${insertedIds.length} questions to the library. IDs: ${insertedIds.join(", ")}`
+  );
 }
 
 main().catch((err) => {

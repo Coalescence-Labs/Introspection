@@ -1,6 +1,6 @@
 "use client";
 
-import { RefObject, useState, useEffect, useRef } from "react";
+import { type RefObject, useEffect, useRef, useState } from "react";
 import { throttle } from "@/lib/utils";
 
 const SCROLL_DELAY_MS = 600;
@@ -164,9 +164,7 @@ export function useCustomScroll(
     const throttledScroll = throttle((e: WheelEvent) => {
       const dir = e.deltaY > 0 ? 1 : e.deltaY < 0 ? -1 : 0;
       if (dir === 0) return;
-      setCurrentSection((prev) =>
-        Math.max(0, Math.min(prev + dir, itemCount - 1))
-      );
+      setCurrentSection((prev) => Math.max(0, Math.min(prev + dir, itemCount - 1)));
     }, SCROLL_THROTTLE_MS);
 
     const handleWheel = (e: WheelEvent) => {

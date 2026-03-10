@@ -22,11 +22,7 @@ export function WelcomeContent({ containerRef, touchMode }: WelcomeContentProps)
   const sections = (
     <>
       {welcomeSections.map((Section, index) => (
-        <WelcomeSection
-          key={index}
-          active={currentSection === index}
-          touchScroll={touchMode}
-        >
+        <WelcomeSection key={index} active={currentSection === index} touchScroll={touchMode}>
           <Section />
         </WelcomeSection>
       ))}

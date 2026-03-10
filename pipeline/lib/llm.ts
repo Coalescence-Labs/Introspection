@@ -1,6 +1,4 @@
-import { GatewayModelId, generateText, Output } from "ai";
-import { LLMGeneratedDailyQuestion, LLMGeneratedDailyQuestionArray } from "./schema";
-import { DAILY_GENERATOR_PROMPT, EXPANSIVE_GENERATOR_PROMPT } from "./prompts";
+import { type GatewayModelId, generateText, Output } from "ai";
 import {
   executeLlmCall,
   type LlmCallFailure,
@@ -8,8 +6,10 @@ import {
   type LlmCallSuccess,
   type LlmPerformanceMetrics,
 } from "./llm-metrics";
+import { DAILY_GENERATOR_PROMPT, EXPANSIVE_GENERATOR_PROMPT } from "./prompts";
+import { LLMGeneratedDailyQuestion, LLMGeneratedDailyQuestionArray } from "./schema";
 
-const DEFAULT_MODEL: GatewayModelId = "openai/gpt-5.2"
+const DEFAULT_MODEL: GatewayModelId = "openai/gpt-5.2";
 
 interface GenerateDailyQuestionInput {
   date: string; // YYYY-MM-DD
@@ -29,11 +29,13 @@ export type GenerateDailyQuestionOutput =
  * Call the LLM to generate a single daily question for the given date.
  * Validates date; builds prompt with optional context; returns parsed schema or error with metrics.
  */
-export async function generateDailyQuestion(input: GenerateDailyQuestionInput): Promise<GenerateDailyQuestionOutput> {
+export async function generateDailyQuestion(
+  input: GenerateDailyQuestionInput
+): Promise<GenerateDailyQuestionOutput> {
   const startTime = performance.now();
 
   let date: string;
-  
+
   try {
     if (!input.date) throw new Error("No date specified");
     if (!validateDateString(input.date)) {
@@ -45,13 +47,13 @@ export async function generateDailyQuestion(input: GenerateDailyQuestionInput): 
           type: "invalid_input",
         },
         runId: input.runId,
-      }
+      };
     }
     date = input.date;
   } catch (err) {
     date = getCurrentDateString();
   }
-  
+
   const modelId = input.model || DEFAULT_MODEL;
 
   const endInputValidation = performance.now();
@@ -81,7 +83,7 @@ export async function generateDailyQuestion(input: GenerateDailyQuestionInput): 
         maxOutputTokens: 1200,
         output: Output.object({ schema: LLMGeneratedDailyQuestion }),
         temperature: 0.9,
-        presencePenalty: 0.6
+        presencePenalty: 0.6,
       });
 
       return {
@@ -187,10 +189,10 @@ export function getCurrentDateString(): string {
 /** Returns true if dateString is YYYY-MM-DD with valid calendar date (e.g. month 1–12, day valid for month/year). */
 export function validateDateString(dateString: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateString)) return false;
-  
+
   // Verify it is a valid date
   // Ensure month is 1-12, day is 1-31, and year is 1970-3050
-  const [year, month, day] = dateString.split('-').map(Number);
+  const [year, month, day] = dateString.split("-").map(Number);
   if (isNaN(year) || isNaN(month) || isNaN(day)) return false;
   if (year < 1970 || year > 3050) return false;
   if (month < 1 || month > 12) return false;
