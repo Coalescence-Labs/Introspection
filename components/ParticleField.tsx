@@ -8,10 +8,10 @@
  */
 
 import { useEffect, useRef } from "react";
-import { useWelcomeScroll } from "@/lib/contexts/welcome-scroll-context";
-import { welcomeSections } from "@/components/welcome-sections";
 import * as THREE from "three";
 import { GPUComputationRenderer } from "three/examples/jsm/misc/GPUComputationRenderer.js";
+import { welcomeSections } from "@/components/welcome-sections";
+import { useWelcomeScroll } from "@/lib/contexts/welcome-scroll-context";
 
 type ParticleFieldProps = {
   count?: number;

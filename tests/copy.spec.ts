@@ -9,7 +9,7 @@ function expectPlainString(text: string) {
 
 test.describe("Copy functionality", () => {
   test.beforeEach(async ({ context }) => {
-    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await context.grantPermissions(["clipboard-read"]);
   });
 
   test("CopyButton on today page: click copies to clipboard and content is plain string", async ({
@@ -25,7 +25,7 @@ test.describe("Copy functionality", () => {
     await expect(page.getByText("Copied!")).toBeVisible({ timeout: 5000 });
 
     const clipboardText = await page.evaluate(() =>
-      navigator.clipboard.readText()
+      navigator.clipboard.readText(),
     );
     expectPlainString(clipboardText);
     expect(clipboardText.trim().length).toBeGreaterThan(0);
@@ -48,8 +48,10 @@ test.describe("Copy functionality", () => {
   }) => {
     await page.goto("/library", { waitUntil: "networkidle" });
     await expect(
-      page.getByRole("heading", { name: /question library/i })
-    ).toBeVisible({ timeout: 10000 });
+      page.getByRole("heading", { name: /question library/i }),
+    ).toBeVisible({
+      timeout: 10000,
+    });
 
     // Copy icon is revealed on card hover; find first question card and hover to show the copy button
     const firstCard = page.locator('[class*="border-l-accent"]').first();
@@ -61,7 +63,7 @@ test.describe("Copy functionality", () => {
     await copyButtonInCard.click();
 
     const clipboardText = await page.evaluate(() =>
-      navigator.clipboard.readText()
+      navigator.clipboard.readText(),
     );
     expectPlainString(clipboardText);
     expect(clipboardText.trim().length).toBeGreaterThan(0);
@@ -76,7 +78,7 @@ test.describe("Copy functionality", () => {
     await copyButton.click();
 
     const clipboardText = await page.evaluate(() =>
-      navigator.clipboard.readText()
+      navigator.clipboard.readText(),
     );
     expect(clipboardText).not.toMatch(/<[^>]+>/);
     expect(typeof clipboardText).toBe("string");

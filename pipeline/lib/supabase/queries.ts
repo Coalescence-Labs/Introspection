@@ -3,19 +3,17 @@
  * Not used by the web app; app uses anon client in lib/supabase/server.ts.
  */
 
-import { QuestionFeaturedHistory, QuestionRow } from "@/lib/content/schema";
-import { supabaseWorker } from "./supabase-worker";
 import { PostgrestError } from "@supabase/supabase-js";
-import { GenerationRunsRow } from "../schema";
+import { QuestionFeaturedHistory, QuestionRow } from "@/lib/content/schema";
+import type { GenerationRunsRow } from "../schema";
+import { supabaseWorker } from "./supabase-worker";
 
 export async function hasRunForDate(date: string): Promise<boolean> {
-
   try {
-    const { data, error } = 
-      await supabaseWorker
-        .from("generation_runs")
-        .select("id")
-        .eq("run_date", date)
+    const { data, error } = await supabaseWorker
+      .from("generation_runs")
+      .select("id")
+      .eq("run_date", date);
 
     if (error) {
       throw error;
@@ -61,7 +59,11 @@ export async function recordRunStart(date: string): Promise<string> {
 
 export async function getRunByDate(date: string): Promise<GenerationRunsRow | null> {
   try {
-    const { data, error } = await supabaseWorker.from("generation_runs").select("*").eq("run_date", date).maybeSingle();
+    const { data, error } = await supabaseWorker
+      .from("generation_runs")
+      .select("*")
+      .eq("run_date", date)
+      .maybeSingle();
     if (error) {
       throw error;
     }
@@ -80,18 +82,26 @@ interface RecordRunResultInput {
   notes?: string;
 }
 
-export async function recordRunResult({ date, status, model, runId, notes }: RecordRunResultInput): Promise<void> {
-
+export async function recordRunResult({
+  date,
+  status,
+  model,
+  runId,
+  notes,
+}: RecordRunResultInput): Promise<void> {
   try {
-    const { data, error } = await supabaseWorker.from("generation_runs").upsert({
-      run_date: date,
-      status,
-      model,
-      id: runId,
-      notes,
-    }, {
-      onConflict: "run_date",
-    });
+    const { data, error } = await supabaseWorker.from("generation_runs").upsert(
+      {
+        run_date: date,
+        status,
+        model,
+        id: runId,
+        notes,
+      },
+      {
+        onConflict: "run_date",
+      }
+    );
 
     if (error) {
       throw error;
@@ -104,7 +114,11 @@ export async function recordRunResult({ date, status, model, runId, notes }: Rec
 /**
  * Fetches questions from the library (questions table) for context when generating new ones.
  */
-export async function getLibraryQuestions({ limit = 50 }: { limit?: number }): Promise<QuestionRow[]> {
+export async function getLibraryQuestions({
+  limit = 50,
+}: {
+  limit?: number;
+}): Promise<QuestionRow[]> {
   try {
     const { data, error } = await supabaseWorker
       .from("questions")
@@ -127,12 +141,15 @@ export async function getLibraryQuestions({ limit = 50 }: { limit?: number }): P
   }
 }
 
-export async function getRecentDailyQuestions({ limit }: { limit?: number }): Promise<QuestionFeaturedHistory[]> {
+export async function getRecentDailyQuestions({
+  limit,
+}: {
+  limit?: number;
+}): Promise<QuestionFeaturedHistory[]> {
   try {
-    const { data, error } = 
-      await supabaseWorker
-        .from("question_featured_history")
-        .select(`
+    const { data, error } = await supabaseWorker
+      .from("question_featured_history")
+      .select(`
           question_id,
           featured_date,
           questions (
@@ -143,8 +160,8 @@ export async function getRecentDailyQuestions({ limit }: { limit?: number }): Pr
             cadence
           )
         `)
-        .order("created_at", { ascending: false })
-        .limit(limit ?? 30);
+      .order("created_at", { ascending: false })
+      .limit(limit ?? 30);
 
     if (error) {
       throw error;
@@ -156,12 +173,15 @@ export async function getRecentDailyQuestions({ limit }: { limit?: number }): Pr
 
     console.log("Recent daily questions:", JSON.stringify(data, null, 2));
 
-    const questionFeaturedHistory = QuestionFeaturedHistory.array().parse(data?.filter((item) => item.questions).map((item) => ({
-      questionId: item.question_id,
-      featuredDate: item.featured_date,
-      question: QuestionRow.parse(item.questions),
-    })) ?? []);
-
+    const questionFeaturedHistory = QuestionFeaturedHistory.array().parse(
+      data
+        ?.filter((item) => item.questions)
+        .map((item) => ({
+          questionId: item.question_id,
+          featuredDate: item.featured_date,
+          question: QuestionRow.parse(item.questions),
+        })) ?? []
+    );
 
     if (data?.length === 0) {
       console.warn("No recent daily questions found");
@@ -174,7 +194,11 @@ export async function getRecentDailyQuestions({ limit }: { limit?: number }): Pr
   }
 }
 
-export async function insertGeneratedQuestion({ question }: { question: Omit<QuestionRow, "id"> }): Promise<string | null> {
+export async function insertGeneratedQuestion({
+  question,
+}: {
+  question: Omit<QuestionRow, "id">;
+}): Promise<string | null> {
   const id = crypto.randomUUID();
   try {
     const { data, error } = await supabaseWorker
@@ -194,7 +218,6 @@ export async function insertGeneratedQuestion({ question }: { question: Omit<Que
     }
 
     return data?.id ?? null;
-
   } catch (error) {
     console.error("Failed to insert generated question:", error);
     throw error;
@@ -259,15 +282,13 @@ export async function setDailyQuestion({
   }
 
   // Upsert singleton row
-  const { error: upsertError } = await supabaseWorker
-    .from("today_config")
-    .upsert(
-      {
-        id: 1,
-        today_question_id: questionId,
-      },
-      { onConflict: "id" }
-    );
+  const { error: upsertError } = await supabaseWorker.from("today_config").upsert(
+    {
+      id: 1,
+      today_question_id: questionId,
+    },
+    { onConflict: "id" }
+  );
 
   if (upsertError) {
     throw upsertError;

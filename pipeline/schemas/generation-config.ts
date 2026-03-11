@@ -11,7 +11,7 @@ export const GenerationConfigSchema = z.object({
 
   postAboveBenchmarkToLibrary: z.boolean(),
   minAcceptableScore: z.number().finite().gte(0),
-  generatorQuestionCount: z.number().int().min(1).max(20),
+  generatorQuestionCount: z.number().int().min(1).max(50),
 
   models: z.object({
     generator: ModelIdSchema,

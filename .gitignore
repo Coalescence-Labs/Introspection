@@ -42,6 +42,7 @@ next-env.d.ts
 /blob-report/
 /playwright/.cache/
 
+pipeline/output/
 pipeline/systemd/*.service
 pipeline/systemd/*.timer
 

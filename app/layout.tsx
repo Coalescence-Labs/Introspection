@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { Commissioner } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/next";
 import { ThemeProvider } from "next-themes";
-import { Analytics } from "@vercel/analytics/next"
 
 const satoshi = localFont({
   src: [

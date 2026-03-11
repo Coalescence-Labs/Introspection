@@ -2,9 +2,9 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { ScrollInvite } from "@/components/scroll-invite";
 import { useWelcomeScroll } from "@/lib/contexts/welcome-scroll-context";
 import { cn } from "@/lib/utils";
-import { ScrollInvite } from "@/components/scroll-invite";
 import { welcome as s } from "./welcome-styles";
 
 export function WelcomeHeroSection() {
@@ -91,9 +91,7 @@ export function WelcomeStructureSection() {
   return (
     <div className="mx-auto w-full max-w-[1200px] flex flex-col items-center justify-center">
       <div className={s.card}>
-        <h2 className={`${s.sectionTitle} mb-8`}>
-          Your Conversations Already Contain Structure
-        </h2>
+        <h2 className={`${s.sectionTitle} mb-8`}>Your Conversations Already Contain Structure</h2>
         <p className={`${s.bodyLarge} mb-4 mx-auto max-w-xl`}>
           If you use AI often, you've created:
         </p>
@@ -171,10 +169,7 @@ export function WelcomeHowItWorksSection() {
       }}
       className={`${s.card} mx-auto flex max-w-3xl flex-col items-center justify-center`}
     >
-      <motion.h2
-        variants={stepVariants}
-        className={`${s.sectionTitle} mb-14 text-center`}
-      >
+      <motion.h2 variants={stepVariants} className={`${s.sectionTitle} mb-14 text-center`}>
         How It Works
       </motion.h2>
 
@@ -214,7 +209,9 @@ export function WelcomeHowItWorksSection() {
 
 export function WelcomeResultSection() {
   return (
-    <div className={`${s.card} mx-auto flex max-w-[900px] flex-col items-center justify-center text-center`}>
+    <div
+      className={`${s.card} mx-auto flex max-w-[900px] flex-col items-center justify-center text-center`}
+    >
       <h2 className={`${s.sectionTitle} mb-10`}>The Result</h2>
       <div className={`${s.body} mb-12 space-y-6`}>
         <p>Clarity.</p>

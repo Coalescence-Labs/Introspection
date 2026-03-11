@@ -1,4 +1,4 @@
-import { test, expect, mock } from "bun:test";
+import { expect, mock, test } from "bun:test";
 import type { PostgrestError } from "@supabase/supabase-js";
 
 type SupabaseResponse = { data: unknown; error: PostgrestError | null };
@@ -90,9 +90,7 @@ test("recordRunStart returns a UUID", async () => {
   responseQueue.length = 0;
   responseQueue.push({ data: null, error: null });
   const runId = await recordRunStart("2025-02-14");
-  expect(runId).toMatch(
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-  );
+  expect(runId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
 });
 
 test("recordRunStart throws when Supabase returns error", async () => {

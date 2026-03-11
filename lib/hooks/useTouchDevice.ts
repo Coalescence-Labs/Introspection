@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
 /** Detects touch-capable device (touchstart, maxTouchPoints, or coarse pointer). Used for scroll mode on welcome page. */
 export function useTouchDevice(): boolean {

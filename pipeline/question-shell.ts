@@ -8,17 +8,116 @@
  *   c         - add/append or replace context (append / replace / clear)
  *   v         - view current context
  *   m         - switch model (numbered list)
+ *   n [date] [count] - run network (generator → judges → rank), count 1–50; optionally persist to library
  *   q / exit  - quit
  */
 
+import { appendFile, mkdir, writeFile } from "node:fs/promises";
 import * as readline from "node:readline";
-import { GatewayModelId } from "ai";
-import { generateQuestions, type GenerateQuestionsOutput } from "./lib/llm";
-import { getLibraryQuestions, insertGeneratedQuestions } from "./lib/supabase/queries";
+import { dirname, join } from "node:path";
+import type { GatewayModelId } from "ai";
+import {
+  runDailyNetwork,
+  type CandidateWithScores,
+  type NetworkRunMetrics,
+  type PartialNetworkResult,
+  type RunDailyNetworkResult,
+} from "./lib/generation";
+import { type GenerateQuestionsOutput, generateQuestions, getCurrentDateString, validateDateString } from "./lib/llm";
 import type { LLMGeneratedDailyQuestion } from "./lib/schema";
+import { getLibraryQuestions, insertGeneratedQuestions } from "./lib/supabase/queries";
+
+const OUTPUT_DIR = join(import.meta.dir, "output");
+const SHELL_LOG_PATH = join(OUTPUT_DIR, "question-shell.log");
+
+/** Append a timestamped error entry to question-shell.log. Ensures output dir exists. */
+async function logErrorToFile(entry: {
+  source: string;
+  message: string;
+  type?: string;
+  details?: unknown;
+}): Promise<void> {
+  try {
+    await mkdir(dirname(SHELL_LOG_PATH), { recursive: true });
+    const ts = new Date().toISOString();
+    const line =
+      `${ts}  [${entry.source}] ${entry.message}` +
+      (entry.type ? ` (${entry.type})` : "") +
+      (entry.details != null ? `  ${JSON.stringify(entry.details)}` : "") +
+      "\n";
+    await appendFile(SHELL_LOG_PATH, line, "utf8");
+  } catch (err) {
+    console.warn("  Failed to write to log file:", err);
+  }
+}
+
+/** Build recap payload and write a timestamped JSON file under pipeline/output/. */
+async function writeRecapFile(
+  date: string,
+  requestedCount: number | undefined,
+  result: RunDailyNetworkResult
+): Promise<string | null> {
+  const savedAt = new Date().toISOString();
+  const questions =
+    result.ok ? result.allCandidates.map((c) => c.question) : result.partial?.questions ?? [];
+  if (questions.length === 0) return null;
+
+  const payload: Record<string, unknown> = {
+    savedAt,
+    date,
+    requestedCount: requestedCount ?? null,
+    actualCount: questions.length,
+    questions:
+      result.ok
+        ? result.allCandidates.map((c) => ({
+            candidateId: c.candidateId,
+            questionIndex: c.questionIndex,
+            category: c.question.category,
+            simple_text: c.question.simple_text,
+          }))
+        : (result.partial?.questions ?? []).map((q, i) => ({
+            candidateId: `cand_${String(i).padStart(3, "0")}`,
+            questionIndex: i,
+            category: q.category,
+            simple_text: q.simple_text,
+          })),
+    judges:
+      result.ok
+        ? result.judgeOutputs
+        : {
+            ...(result.partial?.novelty && { novelty: result.partial.novelty }),
+            ...(result.partial?.clarity && { clarity: result.partial.clarity }),
+            ...(result.partial?.tone && { tone: result.partial.tone }),
+          },
+  };
+
+  if (result.ok) {
+    payload.rankedCandidates = result.allCandidates.map((c) => ({
+      candidateId: c.candidateId,
+      questionIndex: c.questionIndex,
+      combinedScore: c.combinedScore,
+      novelty: c.novelty,
+      clarity: c.clarity,
+      tone: c.tone,
+      question: c.question,
+    }));
+    payload.winner = result.dailyQuestion;
+    payload.aboveBenchmarkIndices = result.aboveBenchmarkIndices;
+    payload.metrics = result.metrics;
+  } else {
+    payload.partial = true;
+  }
+
+  const safeTimestamp = savedAt.replace(/:/g, "-");
+  const path = join(OUTPUT_DIR, `network-recap-${safeTimestamp}.json`);
+  await mkdir(dirname(path), { recursive: true });
+  await writeFile(path, JSON.stringify(payload, null, 2), "utf8");
+  return path;
+}
 
 const LIBRARY_CONTEXT_LIMIT = 50;
 const MAX_GENERATE = 20;
+const MAX_NETWORK_COUNT = 50;
 
 const ALLOWED_MODELS: { label: string; id: GatewayModelId }[] = [
   { label: "gpt-5.2", id: "openai/gpt-5.2" as GatewayModelId },
@@ -32,9 +131,12 @@ function printBanner(): void {
   console.log(`
   Question Shell — generate, review, and persist questions to Supabase
   -----------------------------------------------------------------
+  Errors are logged to pipeline/output/question-shell.log
+  -----------------------------------------------------------------
   Commands:
     g           Generate 1 question
     g <number>  Generate that many questions (e.g. g 5, max ${MAX_GENERATE})
+    n [date] [count]  Run network (count 1–50); optionally persist to library
     c           Add/replace/clear context for the LLM
     v           View current context
     m           Switch model (numbered list)
@@ -134,11 +236,22 @@ async function runGenerateAndApproval(
     });
   } catch (err) {
     console.error("  Generate failed:", err);
+    await logErrorToFile({
+      source: "generate",
+      message: err instanceof Error ? err.message : String(err),
+      details: { count },
+    });
     return { approvedTexts: [], deniedTexts: [] };
   }
 
   if (!result?.ok) {
     console.error("  Failed to generate questions:", JSON.stringify(result?.error, null, 2));
+    await logErrorToFile({
+      source: "generate",
+      message: result?.error?.message ?? "Unknown error",
+      type: result?.error?.type,
+      details: { count },
+    });
     return { approvedTexts: [], deniedTexts: [] };
   }
 
@@ -167,6 +280,11 @@ async function runGenerateAndApproval(
         console.log(`\n  Saved to Supabase: ${ids.length} question(s). IDs: ${ids.join(", ")}`);
       } catch (err) {
         console.error("  Supabase insert failed:", err);
+        await logErrorToFile({
+          source: "supabase-insert",
+          message: err instanceof Error ? err.message : String(err),
+          details: { approvedCount: approved.length },
+        });
       }
     }
 
@@ -181,6 +299,12 @@ async function runGenerateAndApproval(
     });
     if (!retryResult?.ok) {
       console.error("  Retry generation failed:", retryResult?.error);
+      await logErrorToFile({
+        source: "generate-retry",
+        message: retryResult?.error?.message ?? "Unknown error",
+        type: retryResult?.error?.type,
+        details: { retryCount },
+      });
       break;
     }
     batch = retryResult.data;
@@ -201,10 +325,7 @@ function printCurrentContext(context: string): void {
 
 async function runContextMode(rl: readline.Interface, additionalContext: string): Promise<string> {
   printCurrentContext(additionalContext);
-  const action = await prompt(
-    rl,
-    "  Append (a) / Replace (r) / Clear (c)? [a/r/c]: "
-  );
+  const action = await prompt(rl, "  Append (a) / Replace (r) / Clear (c)? [a/r/c]: ");
   const choice = action.toLowerCase().trim();
   if (choice === "c" || choice === "clear") {
     console.log("  Context cleared.");
@@ -248,6 +369,221 @@ async function runModelSelection(
   return currentModel;
 }
 
+/** Print each candidate with full text and scores in a monospaced block format. */
+function printNetworkSuccess(candidates: CandidateWithScores[]): void {
+  for (let i = 0; i < candidates.length; i++) {
+    const c = candidates[i];
+    const label = i === 0 ? "Candidate 1 (winner)" : `Candidate ${i + 1}`;
+    console.log(`\n  --- ${label} ${c.candidateId} ---`);
+    console.log(`  ${c.question.simple_text}`);
+    console.log(
+      `  combined:  ${c.combinedScore.toFixed(2).padStart(5)}   novelty: ${c.novelty}   clarity: ${c.clarity}   tone: ${c.tone}`
+    );
+  }
+  console.log("");
+}
+
+/** Print metrics at a glance: total tokens, total latency, and per-call breakdown. */
+function printNetworkMetrics(metrics: NetworkRunMetrics): void {
+  const totalTok = metrics.totalTokens;
+  const totalTokStr = totalTok >= 1000 ? `${(totalTok / 1000).toFixed(1)}k` : String(totalTok);
+  const latencySec = (metrics.totalLatencyMs / 1000).toFixed(1);
+  console.log(
+    `  Metrics: ${totalTokStr} tokens (${metrics.totalPromptTokens} in / ${metrics.totalCompletionTokens} out), ${latencySec}s latency`
+  );
+  const parts = metrics.calls.map((c) => {
+    const tok = c.totalTokens ?? (c.promptTokens ?? 0) + (c.completionTokens ?? 0);
+    const tokStr = tok >= 1000 ? `${(tok / 1000).toFixed(1)}k` : String(tok);
+    const lat = c.latencyMs != null ? `${(c.latencyMs / 1000).toFixed(1)}s` : "?";
+    return `${c.operation} ${tokStr} ${lat}`;
+  });
+  console.log(`  Per call: ${parts.join("  |  ")}`);
+}
+
+type NetworkFailureResult = Extract<RunDailyNetworkResult, { ok: false }>;
+
+/** Print a comprehensive dump when the network fails (judge or validation error). */
+function printNetworkFailureDump(result: NetworkFailureResult): void {
+  const { error, partial, partialMetrics } = result;
+  const errorType = error.type ?? "unknown";
+
+  console.log("\n  ─── Network failure ───");
+  console.log("  Error:", error.message);
+  console.log("  Type:", errorType);
+
+  if (error.details) {
+    console.log("  Details:");
+    for (const line of error.details.split("\n")) {
+      console.log("    " + line);
+    }
+  }
+
+  if (errorType === "model_error" && /invalid JSON/i.test(error.message)) {
+    console.log(
+      "  Hint: Judge response was likely truncated or malformed. Try fewer questions (e.g. n 5), or check recap JSON for raw output."
+    );
+  }
+  if (error.type === "invalid_judge_output") {
+    console.log("  Hint: Judge returned wrong/missing/duplicate candidateIds. Check recap for scores array.");
+  }
+
+  const expectedCount = partial?.questions?.length ?? 0;
+  if (expectedCount > 0) {
+    console.log("\n  Pipeline state:");
+    console.log("    Generator: ok (produced " + expectedCount + " candidate(s))");
+    const judges = [
+      { key: "novelty" as const, label: "Novelty judge" },
+      { key: "clarity" as const, label: "Clarity judge" },
+      { key: "tone" as const, label: "Tone judge" },
+    ];
+    for (const { key, label } of judges) {
+      const out = partial?.[key];
+      if (out?.scores != null) {
+        const n = out.scores.length;
+        const expected = expectedCount;
+        const status = n === expected ? `${n} scores` : `${n}/${expected} scores (mismatch)`;
+        console.log(`    ${label}: ok (${status})`);
+      } else {
+        console.log(`    ${label}: failed or not run`);
+      }
+    }
+  }
+
+  if (partial?.questions && partial.questions.length > 0) {
+    console.log("\n  Generated candidates (what was sent to judges):");
+    partial.questions.forEach((q, i) => {
+      const id = `cand_${String(i).padStart(3, "0")}`;
+      const text = q.simple_text.length > 72 ? q.simple_text.slice(0, 69) + "..." : q.simple_text;
+      console.log(`    ${id}  ${q.category}  ${text}`);
+    });
+  }
+
+  if (partial?.novelty?.scores?.length) {
+    console.log("\n  Novelty scores (partial):");
+    for (const s of partial.novelty.scores) {
+      const r = s.rationale ? `  // ${s.rationale.slice(0, 60)}${s.rationale.length > 60 ? "..." : ""}` : "";
+      console.log(`    ${s.candidateId}  ${s.score}${r}`);
+    }
+  }
+  if (partial?.clarity?.scores?.length) {
+    console.log("  Clarity scores (partial):");
+    for (const s of partial.clarity.scores) {
+      console.log(`    ${s.candidateId}  ${s.score}`);
+    }
+  }
+  if (partial?.tone?.scores?.length) {
+    console.log("  Tone scores (partial):");
+    for (const s of partial.tone.scores) {
+      console.log(`    ${s.candidateId}  ${s.score}`);
+    }
+  }
+
+  if (partialMetrics) {
+    console.log("\n  Token usage (partial run):");
+    printNetworkMetrics(partialMetrics);
+  }
+
+  if (partial?.questions?.length) {
+    console.log("\n  Partial result and judge outputs were written to the recap file (see path above).");
+  }
+  console.log("  ───────────────────────\n");
+}
+
+async function runNetworkAndMaybePersist(
+  rl: readline.Interface,
+  date: string,
+  questionCount?: number
+): Promise<void> {
+  const countDesc =
+    questionCount != null ? ` (${questionCount} question${questionCount === 1 ? "" : "s"})` : "";
+  console.log(`  Running network for date ${date}${countDesc}...`);
+  const result = await runDailyNetwork({ date, questionCount });
+
+  try {
+    const recapPath = await writeRecapFile(date, questionCount, result);
+    if (recapPath) console.log("  Recap written to", recapPath);
+  } catch (err) {
+    console.warn("  Failed to write recap:", err);
+  }
+
+  if (!result.ok) {
+    printNetworkFailureDump(result);
+    const errorType = result.error.type ?? "";
+    await logErrorToFile({
+      source: "network",
+      message: result.error.message,
+      type: errorType,
+      details: {
+        ...(result.error.details && { parseOrValidationError: result.error.details }),
+        partialQuestions: result.partial?.questions?.length ?? 0,
+        partialMetrics: result.partialMetrics
+          ? {
+              totalTokens: result.partialMetrics.totalTokens,
+              totalPromptTokens: result.partialMetrics.totalPromptTokens,
+              totalCompletionTokens: result.partialMetrics.totalCompletionTokens,
+              calls: result.partialMetrics.calls.map((c) => ({
+                operation: c.operation,
+                totalTokens: c.totalTokens,
+              })),
+            }
+          : undefined,
+      },
+    });
+    return;
+  }
+
+  printNetworkSuccess(result.allCandidates);
+  printNetworkMetrics(result.metrics);
+
+  const answer = await prompt(
+    rl,
+    "  Save to library? Enter indices (e.g. 1 3), 'winner', 'all', or Enter to skip: "
+  );
+  const raw = answer.toLowerCase().trim();
+  if (raw === "") {
+    console.log("  Skipped.");
+    return;
+  }
+
+  let toSave: LLMGeneratedDailyQuestion[] = [];
+  if (raw === "winner") {
+    toSave = [result.allCandidates[0].question];
+  } else if (raw === "all") {
+    toSave = result.allCandidates.map((c) => c.question);
+  } else {
+    const indices = raw.split(/\s+/).map((s) => parseInt(s, 10));
+    for (const oneBased of indices) {
+      if (oneBased >= 1 && oneBased <= result.allCandidates.length) {
+        toSave.push(result.allCandidates[oneBased - 1].question);
+      }
+    }
+  }
+
+  if (toSave.length === 0) {
+    console.log("  No valid selection; skipped.");
+    return;
+  }
+
+  try {
+    const ids = await insertGeneratedQuestions({
+      questions: toSave.map((q) => ({
+        category: q.category,
+        simple_text: q.simple_text,
+        tags: [],
+        cadence: "daily",
+      })),
+    });
+    console.log(`  Saved to library: ${ids.length} question(s). IDs: ${ids.join(", ")}`);
+  } catch (err) {
+    console.error("  Supabase insert failed:", err);
+    await logErrorToFile({
+      source: "supabase-insert",
+      message: err instanceof Error ? err.message : String(err),
+      details: { toSaveCount: toSave.length },
+    });
+  }
+}
+
 async function main(): Promise<void> {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   let currentModel: GatewayModelId = ALLOWED_MODELS[0].id;
@@ -269,7 +605,9 @@ async function main(): Promise<void> {
 
       if (cmd === "g") {
         const countArg = parts[1];
-        const count = countArg ? Math.min(MAX_GENERATE, Math.max(1, parseInt(countArg, 10) || 1)) : 1;
+        const count = countArg
+          ? Math.min(MAX_GENERATE, Math.max(1, parseInt(countArg, 10) || 1))
+          : 1;
         const { approvedTexts, deniedTexts } = await runGenerateAndApproval(
           rl,
           currentModel,
@@ -318,7 +656,46 @@ async function main(): Promise<void> {
         return;
       }
 
-      console.log("  Unknown command. Use g, g <n>, c, v, m, or q/exit.");
+      if (cmd === "n") {
+        const arg1 = parts[1];
+        const arg2 = parts[2];
+        let date: string;
+        let questionCount: number | undefined;
+        if (arg1 == null) {
+          date = getCurrentDateString();
+        } else if (arg2 != null) {
+          date = arg1;
+          const n = parseInt(arg2, 10);
+          if (!validateDateString(date)) {
+            console.log("  Invalid date format, use YYYY-MM-DD");
+            loop();
+            return;
+          }
+          if (!Number.isFinite(n) || n < 1 || n > MAX_NETWORK_COUNT) {
+            console.log(`  Invalid count; use 1–${MAX_NETWORK_COUNT}`);
+            loop();
+            return;
+          }
+          questionCount = n;
+        } else if (validateDateString(arg1)) {
+          date = arg1;
+        } else {
+          const n = parseInt(arg1, 10);
+          if (Number.isFinite(n) && n >= 1 && n <= MAX_NETWORK_COUNT) {
+            date = getCurrentDateString();
+            questionCount = n;
+          } else {
+            console.log(`  Invalid date or count; use YYYY-MM-DD or 1–${MAX_NETWORK_COUNT}`);
+            loop();
+            return;
+          }
+        }
+        await runNetworkAndMaybePersist(rl, date, questionCount);
+        loop();
+        return;
+      }
+
+      console.log("  Unknown command. Use g, g <n>, n [date] [count], c, v, m, or q/exit.");
       loop();
     });
   };

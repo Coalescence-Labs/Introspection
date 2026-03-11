@@ -2,9 +2,9 @@
 
 import { useLayoutEffect } from "react";
 import { QuestionHero } from "@/components/question-hero";
+import { useTodayPage } from "@/components/today-page-client";
 import type { Question } from "@/lib/content/schema";
 import { generatePrompt } from "@/lib/prompt/engine";
-import { useTodayPage } from "@/components/today-page-client";
 
 /**
  * Rendered inside Suspense after the daily question is loaded. Renders the question hero and

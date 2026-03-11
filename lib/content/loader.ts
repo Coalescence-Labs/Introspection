@@ -3,9 +3,9 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { getSupabase } from "@/lib/supabase/server";
 import { mapQuestionsWithVariants } from "./map-supabase";
-import { Question } from "./schema";
 import {
   PromptVariantRow,
+  Question,
   QuestionLibrary,
   QuestionRow,
   TodayConfig,
@@ -137,7 +137,6 @@ export async function getQuestionById(id: string): Promise<Question | undefined>
     return questions.find((q) => q.id === id);
   }
 }
-
 
 /**
  * Load the current daily question from Supabase (today_config + question + variants).

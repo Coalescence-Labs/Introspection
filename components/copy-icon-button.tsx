@@ -3,8 +3,8 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Copy } from "lucide-react";
 import { useState } from "react";
-import { cn } from "@/lib/utils";
 import { useCopy } from "@/lib/hooks/useCopy";
+import { cn } from "@/lib/utils";
 
 interface CopyIconButtonProps {
   text: string;
