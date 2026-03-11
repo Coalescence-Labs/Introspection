@@ -33,6 +33,13 @@ export interface RunDailyNetworkPersist {
   ): void | Promise<void>;
 }
 
+/** Optional callbacks for progress feedback (e.g. shell UI). */
+export interface RunDailyNetworkProgress {
+  onGeneratorStart?(): void;
+  onGeneratorComplete?(questionCount: number): void;
+  onJudgeStart?(dimension: "novelty" | "clarity" | "tone"): void;
+}
+
 /** Max library questions passed to the novelty judge for comparison. */
 export const LIBRARY_NOVELTY_CAP = 150;
 
@@ -44,6 +51,8 @@ export interface RunDailyNetworkInput {
   questionCount?: number;
   /** If provided, called after generator succeeds and after each judge succeeds. */
   persist?: RunDailyNetworkPersist;
+  /** If provided, called at generator start/complete and when each judge starts. */
+  progress?: RunDailyNetworkProgress;
   /** Question texts from the library to give the novelty judge (capped at LIBRARY_NOVELTY_CAP). */
   libraryQuestionTextsForNovelty?: string[];
 }
@@ -323,8 +332,9 @@ export async function runDailyNetwork(
     input.questionCount != null
       ? Math.min(Math.max(1, input.questionCount), 50)
       : config.generatorQuestionCount;
-  const { context, runId, libraryQuestionTextsForNovelty = [] } = input;
+  const { context, runId, libraryQuestionTextsForNovelty = [], progress } = input;
 
+  progress?.onGeneratorStart?.();
   const generatorResult = await generateQuestions({
     count,
     context,
@@ -346,6 +356,7 @@ export async function runDailyNetwork(
   if (questions.length === 0) {
     return { ok: false, error: { message: "Generator returned no questions", type: "model_error" } };
   }
+  progress?.onGeneratorComplete?.(questions.length);
 
   const candidates = assignCandidateIds(questions);
   const expectedCandidateIds = new Set(candidates.map((c) => c.candidateId));
@@ -365,6 +376,7 @@ export async function runDailyNetwork(
   const runAndPersist = async (
     dimension: JudgeDimension
   ): Promise<LlmCallResult<JudgePanelOutput>> => {
+    progress?.onJudgeStart?.(dimension);
     const modelId =
       dimension === "novelty"
         ? config.models.noveltyJudge

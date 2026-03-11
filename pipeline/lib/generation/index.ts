@@ -12,5 +12,6 @@ export {
   type PartialNetworkResult,
   type RunDailyNetworkInput,
   type RunDailyNetworkPersist,
+  type RunDailyNetworkProgress,
   type RunDailyNetworkResult,
 } from "./network";
