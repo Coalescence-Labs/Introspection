@@ -3,13 +3,13 @@
  * Usage: bun run pipeline/question-shell.ts (or bun run pipeline:questions)
  *
  * Commands:
- *   g         - generate 1 question
- *   g <n>     - generate n questions (e.g. g 5), max 20
- *   c         - add/append or replace context (append / replace / clear)
- *   v         - view current context
- *   m         - switch model (numbered list)
- *   n [date] [count] - run network (generator → judges → rank), count 1–50; optionally persist to library
- *   q / exit  - quit
+ *   g [number]          generate questions (optional number, default 1, max 20)
+ *   n [date] [count]    run network (generator → judges → rank), count 1–50; optionally persist to library
+ *   c                   add/append or replace context (append / replace / clear)
+ *   v                   view current context
+ *   m                   switch model (numbered list)
+ *   h / help            show help
+ *   q / exit            quit
  */
 
 import { appendFile, mkdir, writeFile } from "node:fs/promises";
@@ -23,9 +23,17 @@ import {
   type PartialNetworkResult,
   type RunDailyNetworkResult,
 } from "./lib/generation";
-import { type GenerateQuestionsOutput, generateQuestions, getCurrentDateString, validateDateString } from "./lib/llm";
+import {
+  type GenerateQuestionsOutput,
+  generateQuestions,
+  getCurrentDateString,
+  validateDateString,
+} from "./lib/llm";
 import type { LLMGeneratedDailyQuestion } from "./lib/schema";
-import { getLibraryQuestions, insertGeneratedQuestions } from "./lib/supabase/queries";
+import {
+  getLibraryQuestions,
+  insertGeneratedQuestions,
+} from "./lib/supabase/queries";
 
 const OUTPUT_DIR = join(import.meta.dir, "output");
 const SHELL_LOG_PATH = join(OUTPUT_DIR, "question-shell.log");
@@ -55,11 +63,12 @@ async function logErrorToFile(entry: {
 async function writeRecapFile(
   date: string,
   requestedCount: number | undefined,
-  result: RunDailyNetworkResult
+  result: RunDailyNetworkResult,
 ): Promise<string | null> {
   const savedAt = new Date().toISOString();
-  const questions =
-    result.ok ? result.allCandidates.map((c) => c.question) : result.partial?.questions ?? [];
+  const questions = result.ok
+    ? result.allCandidates.map((c) => c.question)
+    : (result.partial?.questions ?? []);
   if (questions.length === 0) return null;
 
   const payload: Record<string, unknown> = {
@@ -67,28 +76,26 @@ async function writeRecapFile(
     date,
     requestedCount: requestedCount ?? null,
     actualCount: questions.length,
-    questions:
-      result.ok
-        ? result.allCandidates.map((c) => ({
-            candidateId: c.candidateId,
-            questionIndex: c.questionIndex,
-            category: c.question.category,
-            simple_text: c.question.simple_text,
-          }))
-        : (result.partial?.questions ?? []).map((q, i) => ({
-            candidateId: `cand_${String(i).padStart(3, "0")}`,
-            questionIndex: i,
-            category: q.category,
-            simple_text: q.simple_text,
-          })),
-    judges:
-      result.ok
-        ? result.judgeOutputs
-        : {
-            ...(result.partial?.novelty && { novelty: result.partial.novelty }),
-            ...(result.partial?.clarity && { clarity: result.partial.clarity }),
-            ...(result.partial?.tone && { tone: result.partial.tone }),
-          },
+    questions: result.ok
+      ? result.allCandidates.map((c) => ({
+          candidateId: c.candidateId,
+          questionIndex: c.questionIndex,
+          category: c.question.category,
+          simple_text: c.question.simple_text,
+        }))
+      : (result.partial?.questions ?? []).map((q, i) => ({
+          candidateId: `cand_${String(i).padStart(3, "0")}`,
+          questionIndex: i,
+          category: q.category,
+          simple_text: q.simple_text,
+        })),
+    judges: result.ok
+      ? result.judgeOutputs
+      : {
+          ...(result.partial?.novelty && { novelty: result.partial.novelty }),
+          ...(result.partial?.clarity && { clarity: result.partial.clarity }),
+          ...(result.partial?.tone && { tone: result.partial.tone }),
+        },
   };
 
   if (result.ok) {
@@ -134,13 +141,13 @@ function printBanner(): void {
   Errors are logged to pipeline/output/question-shell.log
   -----------------------------------------------------------------
   Commands:
-    g           Generate 1 question
-    g <number>  Generate that many questions (e.g. g 5, max ${MAX_GENERATE})
-    n [date] [count]  Run network (count 1–50); optionally persist to library
-    c           Add/replace/clear context for the LLM
-    v           View current context
-    m           Switch model (numbered list)
-    q / exit    Quit
+    g [number]          Generate questions (optional number, default 1, max ${MAX_GENERATE})
+    n [date] [count]    Run network (count 1–50); optionally persist to library
+    c                   Add/replace/clear context for the LLM
+    v                   View current context
+    m                   Switch model (numbered list)
+    h / help            Show this help
+    q / exit            Quit
   -----------------------------------------------------------------
 `);
 }
@@ -156,7 +163,10 @@ async function buildContext(additionalContext: string): Promise<string> {
   try {
     library = await getLibraryQuestions({ limit: LIBRARY_CONTEXT_LIMIT });
   } catch (err) {
-    console.warn("Failed to load library for context, continuing with empty:", err);
+    console.warn(
+      "Failed to load library for context, continuing with empty:",
+      err,
+    );
   }
   let context = "";
   if (library.length > 0) {
@@ -172,7 +182,7 @@ async function buildContext(additionalContext: string): Promise<string> {
 
 async function runApprovalUX(
   rl: readline.Interface,
-  batch: LLMGeneratedDailyQuestion[]
+  batch: LLMGeneratedDailyQuestion[],
 ): Promise<{
   approved: LLMGeneratedDailyQuestion[];
   denied: LLMGeneratedDailyQuestion[];
@@ -185,7 +195,9 @@ async function runApprovalUX(
   for (let i = 0; i < batch.length; i++) {
     const q = batch[i];
     const num = i + 1;
-    console.log(`\n  [${num}/${batch.length}] ${q.simple_text} [${q.category}]`);
+    console.log(
+      `\n  [${num}/${batch.length}] ${q.simple_text} [${q.category}]`,
+    );
     const answer = await prompt(rl, "  [y/n/r] (approve / deny / retry): ");
     const lower = answer.toLowerCase();
     if (lower === "a y" || lower === "ay") {
@@ -219,7 +231,7 @@ async function runGenerateAndApproval(
   rl: readline.Interface,
   currentModel: GatewayModelId,
   additionalContext: string,
-  count: number
+  count: number,
 ): Promise<{ approvedTexts: string[]; deniedTexts: string[] }> {
   const allApprovedTexts: string[] = [];
   const allDeniedTexts: string[] = [];
@@ -245,7 +257,10 @@ async function runGenerateAndApproval(
   }
 
   if (!result?.ok) {
-    console.error("  Failed to generate questions:", JSON.stringify(result?.error, null, 2));
+    console.error(
+      "  Failed to generate questions:",
+      JSON.stringify(result?.error, null, 2),
+    );
     await logErrorToFile({
       source: "generate",
       message: result?.error?.message ?? "Unknown error",
@@ -277,7 +292,9 @@ async function runGenerateAndApproval(
             cadence: "daily",
           })),
         });
-        console.log(`\n  Saved to Supabase: ${ids.length} question(s). IDs: ${ids.join(", ")}`);
+        console.log(
+          `\n  Saved to Supabase: ${ids.length} question(s). IDs: ${ids.join(", ")}`,
+        );
       } catch (err) {
         console.error("  Supabase insert failed:", err);
         await logErrorToFile({
@@ -323,9 +340,15 @@ function printCurrentContext(context: string): void {
   console.log("  --- end ---");
 }
 
-async function runContextMode(rl: readline.Interface, additionalContext: string): Promise<string> {
+async function runContextMode(
+  rl: readline.Interface,
+  additionalContext: string,
+): Promise<string> {
   printCurrentContext(additionalContext);
-  const action = await prompt(rl, "  Append (a) / Replace (r) / Clear (c)? [a/r/c]: ");
+  const action = await prompt(
+    rl,
+    "  Append (a) / Replace (r) / Clear (c)? [a/r/c]: ",
+  );
   const choice = action.toLowerCase().trim();
   if (choice === "c" || choice === "clear") {
     console.log("  Context cleared.");
@@ -356,10 +379,12 @@ async function runContextMode(rl: readline.Interface, additionalContext: string)
 
 async function runModelSelection(
   rl: readline.Interface,
-  currentModel: GatewayModelId
+  currentModel: GatewayModelId,
 ): Promise<GatewayModelId> {
   console.log("  Select model (1–5):");
-  ALLOWED_MODELS.forEach((m, i) => console.log(`    ${i + 1}. ${m.label} (${m.id})`));
+  ALLOWED_MODELS.forEach((m, i) =>
+    console.log(`    ${i + 1}. ${m.label} (${m.id})`),
+  );
   const raw = await prompt(rl, "  Number: ");
   const idx = parseInt(raw, 10);
   if (idx >= 1 && idx <= ALLOWED_MODELS.length) {
@@ -377,7 +402,7 @@ function printNetworkSuccess(candidates: CandidateWithScores[]): void {
     console.log(`\n  --- ${label} ${c.candidateId} ---`);
     console.log(`  ${c.question.simple_text}`);
     console.log(
-      `  combined:  ${c.combinedScore.toFixed(2).padStart(5)}   novelty: ${c.novelty}   clarity: ${c.clarity}   tone: ${c.tone}`
+      `  combined:  ${c.combinedScore.toFixed(2).padStart(5)}   novelty: ${c.novelty}   clarity: ${c.clarity}   tone: ${c.tone}`,
     );
   }
   console.log("");
@@ -386,15 +411,18 @@ function printNetworkSuccess(candidates: CandidateWithScores[]): void {
 /** Print metrics at a glance: total tokens, total latency, and per-call breakdown. */
 function printNetworkMetrics(metrics: NetworkRunMetrics): void {
   const totalTok = metrics.totalTokens;
-  const totalTokStr = totalTok >= 1000 ? `${(totalTok / 1000).toFixed(1)}k` : String(totalTok);
+  const totalTokStr =
+    totalTok >= 1000 ? `${(totalTok / 1000).toFixed(1)}k` : String(totalTok);
   const latencySec = (metrics.totalLatencyMs / 1000).toFixed(1);
   console.log(
-    `  Metrics: ${totalTokStr} tokens (${metrics.totalPromptTokens} in / ${metrics.totalCompletionTokens} out), ${latencySec}s latency`
+    `  Metrics: ${totalTokStr} tokens (${metrics.totalPromptTokens} in / ${metrics.totalCompletionTokens} out), ${latencySec}s latency`,
   );
   const parts = metrics.calls.map((c) => {
-    const tok = c.totalTokens ?? (c.promptTokens ?? 0) + (c.completionTokens ?? 0);
+    const tok =
+      c.totalTokens ?? (c.promptTokens ?? 0) + (c.completionTokens ?? 0);
     const tokStr = tok >= 1000 ? `${(tok / 1000).toFixed(1)}k` : String(tok);
-    const lat = c.latencyMs != null ? `${(c.latencyMs / 1000).toFixed(1)}s` : "?";
+    const lat =
+      c.latencyMs != null ? `${(c.latencyMs / 1000).toFixed(1)}s` : "?";
     return `${c.operation} ${tokStr} ${lat}`;
   });
   console.log(`  Per call: ${parts.join("  |  ")}`);
@@ -420,17 +448,21 @@ function printNetworkFailureDump(result: NetworkFailureResult): void {
 
   if (errorType === "model_error" && /invalid JSON/i.test(error.message)) {
     console.log(
-      "  Hint: Judge response was likely truncated or malformed. Try fewer questions (e.g. n 5), or check recap JSON for raw output."
+      "  Hint: Judge response was likely truncated or malformed. Try fewer questions (e.g. n 5), or check recap JSON for raw output.",
     );
   }
   if (error.type === "invalid_judge_output") {
-    console.log("  Hint: Judge returned wrong/missing/duplicate candidateIds. Check recap for scores array.");
+    console.log(
+      "  Hint: Judge returned wrong/missing/duplicate candidateIds. Check recap for scores array.",
+    );
   }
 
   const expectedCount = partial?.questions?.length ?? 0;
   if (expectedCount > 0) {
     console.log("\n  Pipeline state:");
-    console.log("    Generator: ok (produced " + expectedCount + " candidate(s))");
+    console.log(
+      "    Generator: ok (produced " + expectedCount + " candidate(s))",
+    );
     const judges = [
       { key: "novelty" as const, label: "Novelty judge" },
       { key: "clarity" as const, label: "Clarity judge" },
@@ -441,7 +473,8 @@ function printNetworkFailureDump(result: NetworkFailureResult): void {
       if (out?.scores != null) {
         const n = out.scores.length;
         const expected = expectedCount;
-        const status = n === expected ? `${n} scores` : `${n}/${expected} scores (mismatch)`;
+        const status =
+          n === expected ? `${n} scores` : `${n}/${expected} scores (mismatch)`;
         console.log(`    ${label}: ok (${status})`);
       } else {
         console.log(`    ${label}: failed or not run`);
@@ -453,7 +486,10 @@ function printNetworkFailureDump(result: NetworkFailureResult): void {
     console.log("\n  Generated candidates (what was sent to judges):");
     partial.questions.forEach((q, i) => {
       const id = `cand_${String(i).padStart(3, "0")}`;
-      const text = q.simple_text.length > 72 ? q.simple_text.slice(0, 69) + "..." : q.simple_text;
+      const text =
+        q.simple_text.length > 72
+          ? q.simple_text.slice(0, 69) + "..."
+          : q.simple_text;
       console.log(`    ${id}  ${q.category}  ${text}`);
     });
   }
@@ -461,7 +497,9 @@ function printNetworkFailureDump(result: NetworkFailureResult): void {
   if (partial?.novelty?.scores?.length) {
     console.log("\n  Novelty scores (partial):");
     for (const s of partial.novelty.scores) {
-      const r = s.rationale ? `  // ${s.rationale.slice(0, 60)}${s.rationale.length > 60 ? "..." : ""}` : "";
+      const r = s.rationale
+        ? `  // ${s.rationale.slice(0, 60)}${s.rationale.length > 60 ? "..." : ""}`
+        : "";
       console.log(`    ${s.candidateId}  ${s.score}${r}`);
     }
   }
@@ -484,7 +522,9 @@ function printNetworkFailureDump(result: NetworkFailureResult): void {
   }
 
   if (partial?.questions?.length) {
-    console.log("\n  Partial result and judge outputs were written to the recap file (see path above).");
+    console.log(
+      "\n  Partial result and judge outputs were written to the recap file (see path above).",
+    );
   }
   console.log("  ───────────────────────\n");
 }
@@ -492,12 +532,28 @@ function printNetworkFailureDump(result: NetworkFailureResult): void {
 async function runNetworkAndMaybePersist(
   rl: readline.Interface,
   date: string,
-  questionCount?: number
+  questionCount?: number,
 ): Promise<void> {
   const countDesc =
-    questionCount != null ? ` (${questionCount} question${questionCount === 1 ? "" : "s"})` : "";
+    questionCount != null
+      ? ` (${questionCount} question${questionCount === 1 ? "" : "s"})`
+      : "";
   console.log(`  Running network for date ${date}${countDesc}...`);
-  const result = await runDailyNetwork({ date, questionCount });
+  const result = await runDailyNetwork({
+    date,
+    questionCount,
+    progress: {
+      onGeneratorStart() {
+        console.log("  Generator: starting...");
+      },
+      onGeneratorComplete(questionCount) {
+        console.log(`  Generator: done (${questionCount} question${questionCount === 1 ? "" : "s"}).`);
+      },
+      onJudgeStart(dimension) {
+        console.log(`  Judge (${dimension}): starting...`);
+      },
+    },
+  });
 
   try {
     const recapPath = await writeRecapFile(date, questionCount, result);
@@ -514,13 +570,16 @@ async function runNetworkAndMaybePersist(
       message: result.error.message,
       type: errorType,
       details: {
-        ...(result.error.details && { parseOrValidationError: result.error.details }),
+        ...(result.error.details && {
+          parseOrValidationError: result.error.details,
+        }),
         partialQuestions: result.partial?.questions?.length ?? 0,
         partialMetrics: result.partialMetrics
           ? {
               totalTokens: result.partialMetrics.totalTokens,
               totalPromptTokens: result.partialMetrics.totalPromptTokens,
-              totalCompletionTokens: result.partialMetrics.totalCompletionTokens,
+              totalCompletionTokens:
+                result.partialMetrics.totalCompletionTokens,
               calls: result.partialMetrics.calls.map((c) => ({
                 operation: c.operation,
                 totalTokens: c.totalTokens,
@@ -537,7 +596,7 @@ async function runNetworkAndMaybePersist(
 
   const answer = await prompt(
     rl,
-    "  Save to library? Enter indices (e.g. 1 3), 'winner', 'all', or Enter to skip: "
+    "  Save to library? Enter indices (e.g. 1 3), 'winner', 'all', or Enter to skip: ",
   );
   const raw = answer.toLowerCase().trim();
   if (raw === "") {
@@ -573,7 +632,9 @@ async function runNetworkAndMaybePersist(
         cadence: "daily",
       })),
     });
-    console.log(`  Saved to library: ${ids.length} question(s). IDs: ${ids.join(", ")}`);
+    console.log(
+      `  Saved to library: ${ids.length} question(s). IDs: ${ids.join(", ")}`,
+    );
   } catch (err) {
     console.error("  Supabase insert failed:", err);
     await logErrorToFile({
@@ -585,14 +646,17 @@ async function runNetworkAndMaybePersist(
 }
 
 async function main(): Promise<void> {
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
   let currentModel: GatewayModelId = ALLOWED_MODELS[0].id;
   let additionalContext = "";
 
   printBanner();
 
   const loop = (): void => {
-    rl.question("> ", async (line) => {
+    rl.question("\n> ", async (line) => {
       const input = (line ?? "").trim();
       const parts = input.split(/\s+/);
       const cmd = parts[0]?.toLowerCase();
@@ -600,6 +664,12 @@ async function main(): Promise<void> {
       if (!cmd || cmd === "q" || cmd === "exit") {
         rl.close();
         process.exit(0);
+        return;
+      }
+
+      if (cmd === "h" || cmd === "help") {
+        printBanner();
+        loop();
         return;
       }
 
@@ -612,24 +682,28 @@ async function main(): Promise<void> {
           rl,
           currentModel,
           additionalContext,
-          count
+          count,
         );
         const contextBlocks: string[] = [];
         if (approvedTexts.length > 0) {
           contextBlocks.push(
-            "Approved (already in library):\n" + approvedTexts.map((t) => `- ${t}`).join("\n")
+            "Approved (already in library):\n" +
+              approvedTexts.map((t) => `- ${t}`).join("\n"),
           );
         }
         if (deniedTexts.length > 0) {
           contextBlocks.push(
-            "Denied (avoid similar):\n" + deniedTexts.map((t) => `- ${t}`).join("\n")
+            "Denied (avoid similar):\n" +
+              deniedTexts.map((t) => `- ${t}`).join("\n"),
           );
         }
         if (contextBlocks.length > 0) {
           additionalContext = additionalContext
             ? additionalContext + "\n\n" + contextBlocks.join("\n\n")
             : contextBlocks.join("\n\n");
-          console.log("  Context updated with this round's approved/denied questions.");
+          console.log(
+            "  Context updated with this round's approved/denied questions.",
+          );
         }
         loop();
         return;
@@ -685,7 +759,9 @@ async function main(): Promise<void> {
             date = getCurrentDateString();
             questionCount = n;
           } else {
-            console.log(`  Invalid date or count; use YYYY-MM-DD or 1–${MAX_NETWORK_COUNT}`);
+            console.log(
+              `  Invalid date or count; use YYYY-MM-DD or 1–${MAX_NETWORK_COUNT}`,
+            );
             loop();
             return;
           }
@@ -695,7 +771,9 @@ async function main(): Promise<void> {
         return;
       }
 
-      console.log("  Unknown command. Use g, g <n>, n [date] [count], c, v, m, or q/exit.");
+      console.log(
+        "  Unknown command. Use g [number], n [date] [count], c, v, m, h, or q/exit.",
+      );
       loop();
     });
   };
