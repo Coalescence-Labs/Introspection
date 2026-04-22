@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 interface CopyIconButtonProps {
   text: string;
   onCopy?: () => void;
+  disabled?: boolean;
 }
 
 // Corner sparkle for success animation
@@ -58,6 +59,7 @@ function CornerSparkle({ corner, delay }: { corner: "top-right" | "bottom-left";
 export function CopyIconButton({
   text,
   onCopy,
+  disabled,
   className,
 }: React.ComponentProps<"div"> & CopyIconButtonProps) {
   const [showTooltip, setShowTooltip] = useState(false);
@@ -85,14 +87,21 @@ export function CopyIconButton({
       {/* Button */}
       <motion.button
         onClick={handleCopy}
-        onMouseEnter={() => setShowTooltip(true)}
+        onMouseEnter={() => {
+          if (!disabled) setShowTooltip(true);
+        }}
         onMouseLeave={() => setShowTooltip(false)}
+        onFocus={() => {
+          if (!disabled) setShowTooltip(true);
+        }}
+        onBlur={() => setShowTooltip(false)}
+        disabled={disabled}
         className={cn(
-          "relative flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background transition-colors hover:border-accent hover:bg-accent/10",
+          "relative flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background transition-colors hover:border-accent hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-border disabled:hover:bg-background",
           className
         )}
-        whileHover={{ scale: 1.08 }}
-        whileTap={{ scale: 0.92 }}
+        whileHover={disabled ? undefined : { scale: 1.08 }}
+        whileTap={disabled ? undefined : { scale: 0.92 }}
         transition={{ type: "spring", stiffness: 400, damping: 17 }}
         type="button"
       >

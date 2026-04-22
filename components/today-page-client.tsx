@@ -1,13 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { createContext, useContext, useEffect, useState } from "react";
-import { CopyButton } from "@/components/copy-button";
+import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { CopyIconButton } from "@/components/copy-icon-button";
 import { LLMSelector } from "@/components/llm-selector";
 import { PromptPreview } from "@/components/prompt-preview";
 import { SpeechToggle } from "@/components/speech-toggle";
+import { TodayOpenInChatButton } from "@/components/today-open-in-chat-button";
 import type { LLMType } from "@/lib/content/schema";
+import type { OpenInMenuDestinationId } from "@/lib/prompt/open-in-chat-urls";
 import type { GeneratedPrompt } from "@/lib/prompt/types";
+import { loadTodayLocalPrefs, saveTodayLocalPrefs } from "@/lib/today-local-prefs";
 
 /** Shared state for the Today page: LLM choice, speech-friendly toggle, and current prompt (set by TodayQuestionBlock). */
 interface TodayPageContextValue {
@@ -42,6 +45,31 @@ export function TodayPageShell({
   const [selectedLLM, setSelectedLLM] = useState<LLMType>("claude");
   const [speechFriendly, setSpeechFriendly] = useState(false);
   const [prompt, setPrompt] = useState<GeneratedPrompt | null>(null);
+  const [manualOpenInDestination, setManualOpenInDestination] =
+    useState<OpenInMenuDestinationId | null>(null);
+
+  /** After first `useLayoutEffect` storage read; blocks `save` until then so defaults do not overwrite stored prefs mid-hydrate. */
+  const prefsHydratedRef = useRef(false);
+
+  useLayoutEffect(() => {
+    const loaded = loadTodayLocalPrefs();
+    if (loaded) {
+      setSelectedLLM(loaded.selectedLLM);
+      setSpeechFriendly(loaded.speechFriendly);
+      setManualOpenInDestination(loaded.manualOpenInDestination);
+    }
+    prefsHydratedRef.current = true;
+  }, []);
+
+  // Persist after hydration; first run may write minimal defaults if storage was empty.
+  useEffect(() => {
+    if (!prefsHydratedRef.current) return;
+    saveTodayLocalPrefs({
+      selectedLLM,
+      speechFriendly,
+      manualOpenInDestination,
+    });
+  }, [selectedLLM, speechFriendly, manualOpenInDestination]);
 
   const value: TodayPageContextValue = {
     selectedLLM,
@@ -112,8 +140,15 @@ export function TodayPageShell({
             <SpeechToggle enabled={speechFriendly} onToggle={setSpeechFriendly} />
           </div>
         </div>
-        <div className="flex justify-center justify-self-end">
-          <CopyButton text={prompt?.fullPrompt ?? ""} disabled={!prompt} />
+        <div className="flex items-center justify-center gap-3 justify-self-end">
+          <TodayOpenInChatButton
+            query={prompt?.fullPrompt ?? ""}
+            disabled={!prompt}
+            selectedLLM={selectedLLM}
+            manualOpenInDestination={manualOpenInDestination}
+            onManualOpenInDestination={setManualOpenInDestination}
+          />
+          <CopyIconButton text={prompt?.fullPrompt ?? ""} disabled={!prompt} />
         </div>
         <div className="flex-1" />
       </section>

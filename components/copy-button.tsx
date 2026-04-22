@@ -77,7 +77,7 @@ export function CopyButton({ text, onCopy, disabled }: CopyButtonProps) {
         tabIndex={-1}
       >
         <Button
-          variant="accent"
+          variant="secondary"
           size="xl"
           onClick={handleCopy}
           disabled={disabled}
