@@ -65,14 +65,14 @@ export function TodayOpenInChatButton({
         transition={{ type: "spring", stiffness: 400, damping: 17 }}
         className="inline-flex"
       >
-        <div className="flex w-[min(100vw-2rem,320px)] max-w-[320px] overflow-hidden rounded-md shadow-sm sm:w-[280px]">
+        <div className="flex w-[min(100vw-2rem,320px)] max-w-[320px] overflow-visible rounded-md shadow-sm sm:w-[280px]">
           <Button
             type="button"
             variant="accent"
             size="xl"
             disabled={disabled}
             onClick={openPrimary}
-            className="relative min-w-0 flex-1 cursor-pointer select-none overflow-visible rounded-r-none border-r border-accent-foreground/15 bg-accent px-6 text-base font-semibold text-accent-foreground shadow-sm transition-all hover:opacity-90 hover:shadow-md"
+            className="relative z-0 min-w-0 flex-1 cursor-pointer select-none overflow-visible rounded-r-none border-r border-accent-foreground/15 bg-accent px-6 text-base font-semibold text-accent-foreground shadow-sm transition-all hover:opacity-90 hover:shadow-md focus-visible:z-10"
           >
             <span className="flex items-center justify-center gap-2 truncate">
               <Sparkles className="h-5 w-5 shrink-0" />
@@ -85,7 +85,7 @@ export function TodayOpenInChatButton({
               variant="accent"
               size="xl"
               disabled={disabled}
-              className="relative shrink-0 cursor-pointer select-none rounded-l-none border-l border-accent-foreground/15 bg-accent px-3 text-accent-foreground shadow-sm transition-all hover:opacity-90 hover:shadow-md"
+              className="relative z-0 shrink-0 cursor-pointer select-none rounded-l-none border-l border-accent-foreground/15 bg-accent px-3 text-accent-foreground shadow-sm transition-all hover:opacity-90 hover:shadow-md focus-visible:z-10"
               aria-label="More chat apps"
             >
               <ChevronDown className="h-5 w-5" />
