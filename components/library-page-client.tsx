@@ -73,12 +73,12 @@ export function LibraryPageClient({ questions }: LibraryPageClientProps) {
           }),
         ])
       ),
-    [filteredQuestions, selectedLLM]
+    [filteredQuestions]
   );
 
   return (
     <main className="mx-auto min-h-screen max-w-4xl px-6 py-16 sm:py-20">
-      <div className="mb-12">
+      <div className="mb-12 select-none">
         <Link
           href="/today"
           className="mb-8 inline-block text-sm text-muted-foreground transition-colors hover:text-foreground"
@@ -87,13 +87,11 @@ export function LibraryPageClient({ questions }: LibraryPageClientProps) {
           ← Back to today
         </Link>
         <h1 className="text-4xl font-bold">Question Library</h1>
-        <p className="mt-2 text-muted-foreground select-none">
-          Browse all introspection questions by category
-        </p>
+        <p className="mt-2 text-muted-foreground">Browse all introspection questions by category</p>
       </div>
 
       {/* Category filter: All + one button per category; aria-pressed for screen readers. */}
-      <div className="mb-12 flex flex-wrap gap-2">
+      <div className="mb-12 flex flex-wrap gap-2 select-none">
         <button
           onClick={() => setSelectedCategory("all")}
           className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
@@ -138,7 +136,9 @@ export function LibraryPageClient({ questions }: LibraryPageClientProps) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
             >
-              <h2 className="mb-6 text-2xl font-semibold">{categoryLabels[category]}</h2>
+              <h2 className="mb-6 text-2xl font-semibold select-none">
+                {categoryLabels[category]}
+              </h2>
               <div className="space-y-3">
                 {categoryQuestions.map((question) => {
                   const isHovered = hoveredCard === question.id;
@@ -194,7 +194,7 @@ export function LibraryPageClient({ questions }: LibraryPageClientProps) {
         })}
       </div>
 
-      <footer className="mt-20 text-center text-xs text-muted-foreground">
+      <footer className="mt-20 select-none text-center text-xs text-muted-foreground">
         <div className="mb-4 flex justify-center">
           <ThemeToggle aria-label="Toggle theme" />
         </div>

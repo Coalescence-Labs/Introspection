@@ -10,7 +10,7 @@ interface SpeechToggleProps {
 
 export function SpeechToggle({ enabled, onToggle }: SpeechToggleProps) {
   return (
-    <div className="flex items-center justify-center gap-3">
+    <div className="flex select-none items-center justify-center gap-3">
       <Switch
         id="speech-friendly"
         checked={enabled}

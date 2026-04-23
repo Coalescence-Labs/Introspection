@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
-import { Commissioner } from "next/font/google";
+import { Commissioner, Inter } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 import { ThemeProvider } from "next-themes";
+import { cn } from "@/lib/utils";
+
+const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
 const satoshi = localFont({
   src: [
@@ -40,7 +43,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="scroll-smooth" suppressHydrationWarning>
+    <html lang="en" className={cn("scroll-smooth", "font-sans", inter.variable)} suppressHydrationWarning>
       <body className={`${satoshi.variable} ${commissioner.variable}`}>
         <Analytics />
         <ThemeProvider
