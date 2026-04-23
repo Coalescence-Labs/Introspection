@@ -38,7 +38,11 @@ describe("parseTodayPrefsStoredJson", () => {
       input: '{"l":"chatgpt","o":"scira"}',
       expected: p("chatgpt", "scira", false),
     },
-    { name: "open-in v0", input: '{"l":"chatgpt","o":"v0"}', expected: p("chatgpt", "v0", false) },
+    {
+      name: "open-in perplexity destination",
+      input: '{"l":"chatgpt","o":"perplexity"}',
+      expected: p("chatgpt", "perplexity", false),
+    },
     {
       name: "open-in cursor",
       input: '{"l":"chatgpt","o":"cursor"}',
@@ -51,8 +55,8 @@ describe("parseTodayPrefsStoredJson", () => {
     },
     {
       name: "schema version tolerated",
-      input: '{"v":1,"l":"gemini","o":"v0"}',
-      expected: p("gemini", "v0", false),
+      input: '{"v":1,"l":"gemini","o":"perplexity"}',
+      expected: p("gemini", "perplexity", false),
     },
     {
       name: "explicit o null",
@@ -97,6 +101,8 @@ describe("parseTodayPrefsStoredJson", () => {
     { name: "invalid l empty string", input: '{"l":""}', expected: null },
     { name: "invalid l wrong case", input: '{"l":"CLAUDE"}', expected: null },
     { name: "invalid o slack", input: '{"l":"claude","o":"slack"}', expected: null },
+    { name: "legacy o v0 rejected", input: '{"l":"claude","o":"v0"}', expected: null },
+    { name: "legacy o gemini rejected", input: '{"l":"claude","o":"gemini"}', expected: null },
     { name: "invalid o empty", input: '{"l":"claude","o":""}', expected: null },
     { name: "l wrong type number", input: '{"l":1}', expected: null },
     { name: "l wrong type array", input: '{"l":["claude"]}', expected: null },

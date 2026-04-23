@@ -13,7 +13,7 @@ export type ResolveOpenInDestinationInput = {
 /**
  * Resolves the default chat destination for the primary CTA.
  * - If the user picked a destination from the menu, that wins (updates main button + primary click).
- * - Otherwise: Claude / ChatGPT map 1:1; Gemini / Perplexity default to ChatGPT until native links exist.
+ * - Otherwise: Claude / ChatGPT / Perplexity map 1:1; Gemini stays ChatGPT (no reliable “open with prompt” URL).
  */
 export function resolveOpenInDestination(
   input: ResolveOpenInDestinationInput
@@ -22,8 +22,11 @@ export function resolveOpenInDestination(
   if (manualOverride != null) {
     return manualOverride;
   }
-  if (selectedLLM === "gemini" || selectedLLM === "perplexity") {
+  if (selectedLLM === "gemini") {
     return "chatgpt";
+  }
+  if (selectedLLM === "perplexity") {
+    return "perplexity";
   }
   if (selectedLLM === "claude") return "claude";
   if (selectedLLM === "chatgpt") return "chatgpt";
@@ -41,8 +44,8 @@ export function openInDestinationShortLabel(id: OpenInMenuDestinationId): string
       return "T3 Chat";
     case "scira":
       return "Scira";
-    case "v0":
-      return "v0";
+    case "perplexity":
+      return "Perplexity";
     case "cursor":
       return "Cursor";
     default: {

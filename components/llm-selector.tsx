@@ -85,7 +85,7 @@ export function LLMSelector({ selected, onSelect }: LLMSelectorProps) {
         <div className="flex justify-center">
           <motion.button
             onClick={() => setIsExpanded(true)}
-            className="flex w-auto items-center justify-between gap-3 rounded-lg border border-border bg-background px-4 py-3 shadow-sm transition-colors hover:border-accent/30 hover:shadow-md cursor-pointer"
+            className="flex w-auto cursor-pointer select-none items-center justify-between gap-3 rounded-lg border border-border bg-background px-4 py-3 shadow-sm transition-colors hover:border-accent/30 hover:shadow-md"
             whileHover={{ y: -1 }}
             whileTap={{ scale: 0.99 }}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
@@ -117,7 +117,7 @@ export function LLMSelector({ selected, onSelect }: LLMSelectorProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="absolute inset-x-0 top-0 z-10 rounded-lg border border-border bg-background p-4 shadow-lg"
+            className="absolute inset-x-0 top-0 z-10 rounded-lg border border-border bg-background p-4 shadow-lg select-none"
           >
             {/* Section Title */}
             <motion.div

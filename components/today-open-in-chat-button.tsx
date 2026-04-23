@@ -72,7 +72,7 @@ export function TodayOpenInChatButton({
             size="xl"
             disabled={disabled}
             onClick={openPrimary}
-            className="relative min-w-0 flex-1 cursor-pointer overflow-visible rounded-r-none border-r border-accent-foreground/15 bg-accent px-6 text-base font-semibold text-accent-foreground shadow-sm transition-all hover:opacity-90 hover:shadow-md"
+            className="relative min-w-0 flex-1 cursor-pointer select-none overflow-visible rounded-r-none border-r border-accent-foreground/15 bg-accent px-6 text-base font-semibold text-accent-foreground shadow-sm transition-all hover:opacity-90 hover:shadow-md"
           >
             <span className="flex items-center justify-center gap-2 truncate">
               <Sparkles className="h-5 w-5 shrink-0" />
@@ -85,7 +85,7 @@ export function TodayOpenInChatButton({
               variant="accent"
               size="xl"
               disabled={disabled}
-              className="relative shrink-0 cursor-pointer rounded-l-none border-l border-accent-foreground/15 bg-accent px-3 text-accent-foreground shadow-sm transition-all hover:opacity-90 hover:shadow-md"
+              className="relative shrink-0 cursor-pointer select-none rounded-l-none border-l border-accent-foreground/15 bg-accent px-3 text-accent-foreground shadow-sm transition-all hover:opacity-90 hover:shadow-md"
               aria-label="More chat apps"
             >
               <ChevronDown className="h-5 w-5" />

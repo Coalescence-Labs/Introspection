@@ -97,7 +97,7 @@ export function CopyIconButton({
         onBlur={() => setShowTooltip(false)}
         disabled={disabled}
         className={cn(
-          "relative flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background transition-colors hover:border-accent hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-border disabled:hover:bg-background",
+          "relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-md border border-border bg-background transition-colors hover:border-accent hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-border disabled:hover:bg-background",
           className
         )}
         whileHover={disabled ? undefined : { scale: 1.08 }}

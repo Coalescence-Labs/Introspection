@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDownIcon, ExternalLinkIcon, MessageCircleIcon } from "lucide-react";
+import { ChevronDownIcon, ExternalLinkIcon, MessageCircleIcon, SearchIcon } from "lucide-react";
 import type { ComponentProps } from "react";
 import { createContext, useContext, useMemo } from "react";
 import { Button } from "@/components/ui/button";
@@ -16,9 +16,9 @@ import {
   createChatGptPromptUrl,
   createClaudePromptUrl,
   createCursorPromptUrl,
+  createPerplexityPromptUrl,
   createSciraPromptUrl,
   createT3PromptUrl,
-  createV0PromptUrl,
 } from "@/lib/prompt/open-in-chat-urls";
 import { cn } from "@/lib/utils";
 
@@ -52,6 +52,11 @@ const providers = {
       </svg>
     ),
     title: "Open in Claude",
+  },
+  perplexity: {
+    createUrl: createPerplexityPromptUrl,
+    icon: <SearchIcon />,
+    title: "Open in Perplexity",
   },
   cursor: {
     createUrl: createCursorPromptUrl,
@@ -142,17 +147,6 @@ const providers = {
     createUrl: createT3PromptUrl,
     icon: <MessageCircleIcon />,
     title: "Open in T3 Chat",
-  },
-  v0: {
-    createUrl: createV0PromptUrl,
-    icon: (
-      <svg fill="currentColor" viewBox="0 0 147 70" xmlns="http://www.w3.org/2000/svg">
-        <title>v0</title>
-        <path d="M56 50.2031V14H70V60.1562C70 65.5928 65.5928 70 60.1562 70C57.5605 70 54.9982 68.9992 53.1562 67.1573L0 14H19.7969L56 50.2031Z" />
-        <path d="M147 56H133V23.9531L100.953 56H133V70H96.6875C85.8144 70 77 61.1856 77 50.3125V14H91V46.1562L123.156 14H91V0H127.312C138.186 0 147 8.81439 147 19.6875V56Z" />
-      </svg>
-    ),
-    title: "Open in v0",
   },
 };
 
@@ -253,6 +247,26 @@ export const OpenInClaude = (props: OpenInClaudeProps) => {
   );
 };
 
+export type OpenInPerplexityProps = ComponentProps<typeof DropdownMenuItem>;
+
+export const OpenInPerplexity = (props: OpenInPerplexityProps) => {
+  const { query } = useOpenInContext();
+  return (
+    <DropdownMenuItem asChild {...props}>
+      <a
+        className="flex items-center gap-2"
+        href={providers.perplexity.createUrl(query)}
+        rel="noopener"
+        target="_blank"
+      >
+        <span className="shrink-0">{providers.perplexity.icon}</span>
+        <span className="flex-1">{providers.perplexity.title}</span>
+        <ExternalLinkIcon className="size-4 shrink-0" />
+      </a>
+    </DropdownMenuItem>
+  );
+};
+
 export type OpenInT3Props = ComponentProps<typeof DropdownMenuItem>;
 
 export const OpenInT3 = (props: OpenInT3Props) => {
@@ -287,26 +301,6 @@ export const OpenInScira = (props: OpenInSciraProps) => {
       >
         <span className="shrink-0">{providers.scira.icon}</span>
         <span className="flex-1">{providers.scira.title}</span>
-        <ExternalLinkIcon className="size-4 shrink-0" />
-      </a>
-    </DropdownMenuItem>
-  );
-};
-
-export type OpenInv0Props = ComponentProps<typeof DropdownMenuItem>;
-
-export const OpenInv0 = (props: OpenInv0Props) => {
-  const { query } = useOpenInContext();
-  return (
-    <DropdownMenuItem asChild {...props}>
-      <a
-        className="flex items-center gap-2"
-        href={providers.v0.createUrl(query)}
-        rel="noopener"
-        target="_blank"
-      >
-        <span className="shrink-0">{providers.v0.icon}</span>
-        <span className="flex-1">{providers.v0.title}</span>
         <ExternalLinkIcon className="size-4 shrink-0" />
       </a>
     </DropdownMenuItem>

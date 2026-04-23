@@ -18,7 +18,7 @@ export function PromptPreview({ fullPrompt }: PromptPreviewProps) {
       <CardHeader className="pb-3">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="flex w-full items-center justify-between text-left transition-colors hover:text-accent"
+          className="flex w-full select-none items-center justify-between text-left transition-colors hover:text-accent"
           type="button"
           tabIndex={0}
         >

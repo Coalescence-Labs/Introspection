@@ -121,10 +121,12 @@ export function TodayPageShell({
       <section className="flex flex-col py-16 sm:py-20" style={{ height: "100dvh" }}>
         {/* Header: date label (from server) and link to library. */}
         <div className="mb-16 sm:mb-20 flex items-center justify-between">
-          <div className="text-xs text-muted-foreground">Daily Question • {todayLabel}</div>
+          <div className="select-none text-xs text-muted-foreground">
+            Daily Question • {todayLabel}
+          </div>
           <Link
             href="/library"
-            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+            className="select-none text-sm text-muted-foreground transition-colors hover:text-foreground"
             tabIndex={0}
           >
             Browse all questions →
