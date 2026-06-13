@@ -132,15 +132,47 @@ content/
     └── ideas-001.ts       # All variants for ideas-001
 ```
 
-## Deployment
+## Scheduled execution (systemd)
 
-The pipeline runs **server-side only**:
+The daily generator runs **on this Pi (Aetherion)** via a systemd timer, not via
+Vercel cron. The runner is `pipeline/run-daily.ts`; the unit files live in
+`pipeline/systemd/`:
 
-- Use Vercel serverless functions or cron jobs
-- Store API keys in environment variables
-- Never expose keys to client
-- Can run on schedule to refresh content
-- Results are static files deployed with the app
+- `introspection-daily.service` — `oneshot` that runs `bun run pipeline/run-daily.ts`
+  from the repo root, loading env from `.env.local`. Writes timestamp markers to
+  `/var/lib/introspection/{last_attempt,last_success}`.
+- `introspection-daily.timer` — fires daily at `02:00` (`Persistent=true` so a
+  missed run catches up after downtime; `RandomizedDelaySec=300` jitter).
+
+### Install / reinstall
+
+The unit files are copied (not symlinked) into `/etc/systemd/system`, so after
+editing them you must re-run the installer to apply changes:
+
+```bash
+sudo bash pipeline/systemd/install.sh            # install / reinstall + enable timer
+sudo bash pipeline/systemd/install.sh --status   # show timer + last-run markers
+sudo bash pipeline/systemd/install.sh --uninstall # remove units, disable timer
+```
+
+### Operating
+
+```bash
+systemctl status introspection-daily.timer       # is it scheduled?
+systemctl list-timers introspection-daily.timer  # when does it next fire?
+sudo systemctl start introspection-daily.service # run once now (manual trigger)
+journalctl -u introspection-daily.service -n 100 # recent run logs
+```
+
+A faster end-to-end health check is the `system-status` skill (see
+`.claude/skills/system-status/`), which rolls up the timer, last run, Supabase
+config, and today's question in one pass.
+
+### Notes
+
+- API keys stay in `.env.local` on the Pi; never expose them to the client.
+- Generated questions are written to **Supabase** (the runner inserts rows and
+  sets the daily question), not to static files.
 
 ## User-Facing Product
 
