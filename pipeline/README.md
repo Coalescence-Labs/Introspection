@@ -97,6 +97,17 @@ bun run pipeline:generate
 
 Output shows deterministic stub prompts for today's question across all LLMs.
 
+### Organic LLM handoff (one-off, dev)
+
+Generate ranked Organic LLM handoff packages for a source question (not scheduled daily):
+
+```bash
+bun run pipeline:organic-handoff -- --text "What patterns appear in the types of questions I ask?"
+bun run pipeline:organic-handoff -- --from-recap pipeline/output/network-recap-....json
+```
+
+In the question shell, run `n` then `oh` to hand off the network winner. Output: `pipeline/output/organic-handoff-recap-*.json` (includes `handoffUrl` when env is set).
+
 ## Content Storage
 
 Generated variants can be stored in two ways:

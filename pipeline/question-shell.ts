@@ -12,7 +12,7 @@
  *   q / exit            quit
  */
 
-import { appendFile, mkdir, writeFile } from "node:fs/promises";
+import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import * as readline from "node:readline";
 import { dirname, join } from "node:path";
 import type { GatewayModelId } from "ai";
@@ -23,6 +23,8 @@ import {
   type PartialNetworkResult,
   type RunDailyNetworkResult,
 } from "./lib/generation";
+import { runOrganicHandoffNetwork } from "./lib/generation/organic-handoff-network";
+import { buildOrganicHandoffRecap } from "./lib/organic-handoff/export-recap";
 import {
   type GenerateQuestionsOutput,
   generateQuestions,
@@ -37,6 +39,7 @@ import {
 
 const OUTPUT_DIR = join(import.meta.dir, "output");
 const SHELL_LOG_PATH = join(OUTPUT_DIR, "question-shell.log");
+let lastNetworkRecapPath: string | null = null;
 
 /** Append a timestamped error entry to question-shell.log. Ensures output dir exists. */
 async function logErrorToFile(entry: {
@@ -143,6 +146,7 @@ function printBanner(): void {
   Commands:
     g [number]          Generate questions (optional number, default 1, max ${MAX_GENERATE})
     n [date] [count]    Run network (count 1–50); optionally persist to library
+    oh [recap-path]     Run organic handoff network (winner from last n, or path)
     c                   Add/replace/clear context for the LLM
     v                   View current context
     m                   Switch model (numbered list)
@@ -557,7 +561,10 @@ async function runNetworkAndMaybePersist(
 
   try {
     const recapPath = await writeRecapFile(date, questionCount, result);
-    if (recapPath) console.log("  Recap written to", recapPath);
+    if (recapPath) {
+      lastNetworkRecapPath = recapPath;
+      console.log("  Recap written to", recapPath);
+    }
   } catch (err) {
     console.warn("  Failed to write recap:", err);
   }
@@ -771,8 +778,75 @@ async function main(): Promise<void> {
         return;
       }
 
+      if (cmd === "oh") {
+        const recapArg = parts[1];
+        const recapPath =
+          recapArg === "winner" || recapArg == null
+            ? lastNetworkRecapPath
+            : recapArg;
+
+        if (!recapPath) {
+          console.log("  No network recap available. Run n first or pass a recap path.");
+          loop();
+          return;
+        }
+
+        try {
+          const raw = await readFile(recapPath, "utf8");
+          const recap = JSON.parse(raw) as {
+            winner?: { simple_text: string; category?: string; id?: string };
+            rankedCandidates?: { question: { simple_text: string; category?: string } }[];
+          };
+          const winner =
+            recap.winner ?? recap.rankedCandidates?.[0]?.question;
+
+          if (!winner) {
+            console.log("  Could not resolve winner from recap.");
+            loop();
+            return;
+          }
+
+          const sourceQuestion = {
+            id: recap.winner?.id,
+            simple_text: winner.simple_text,
+            category: winner.category,
+          };
+
+          console.log("  Running organic handoff network...");
+          const result = await runOrganicHandoffNetwork({
+            question: sourceQuestion,
+            runId: "question-shell-oh",
+          });
+
+          if (!result.ok) {
+            console.log("  Organic handoff failed:", result.error.message);
+            loop();
+            return;
+          }
+
+          const handoffRecap = buildOrganicHandoffRecap({
+            sourceQuestion,
+            winner: result.winner,
+            allCandidates: result.allCandidates,
+          });
+          const safeTs = handoffRecap.generatedAt.replace(/[:.]/g, "-");
+          const outPath = join(OUTPUT_DIR, `organic-handoff-recap-${safeTs}.json`);
+          await mkdir(dirname(outPath), { recursive: true });
+          await writeFile(outPath, JSON.stringify(handoffRecap, null, 2), "utf8");
+
+          console.log("  Winner:", result.winner.title);
+          console.log("  Recap:", outPath);
+          if (handoffRecap.handoffUrl) console.log("  Handoff URL:", handoffRecap.handoffUrl);
+        } catch (err) {
+          console.log("  oh failed:", err);
+        }
+
+        loop();
+        return;
+      }
+
       console.log(
-        "  Unknown command. Use g [number], n [date] [count], c, v, m, h, or q/exit.",
+        "  Unknown command. Use g [number], n [date] [count], oh, c, v, m, h, or q/exit.",
       );
       loop();
     });

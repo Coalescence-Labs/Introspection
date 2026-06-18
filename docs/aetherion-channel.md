@@ -66,6 +66,24 @@ Store the last deployed version locally (e.g. `~/.introspection-aetherion-versio
 2. Run `./scripts/aetherion-sync.sh` when you want upstream fixes from `main` / `develop`.
 3. When ready for Aetherion to pick up changes, run `./scripts/aetherion-release.sh`.
 
+## Organic LLM handoff (beta)
+
+Requires matching `INTROSPECTION_ORGANIC_SHARED_SECRET` and `ORGANIC_BASE_URL` in `.env.local` (same values as Organic LLM on Aetherion).
+
+| Surface | URL / command |
+|---------|----------------|
+| Sandbox UI | `/sandbox-organic-llm` (dev/Aetherion only; blocked in production) |
+| Handoff API | `POST /api/organic/handoff` |
+| One-off generator | `bun run pipeline:organic-handoff -- --text "..."` |
+| Question shell | `oh` after `n` (uses last network recap winner) |
+
+Keep `lib/organic-relay/` in sync with organic-llm:
+
+```bash
+../organic-llm/scripts/sync-introspection-relay-contract.sh
+./scripts/test-organic-relay-parity.sh
+```
+
 ## Notifications
 
 - **GitHub:** Watch the repo → Custom → Releases (for `aetherion/v*` GitHub Releases).
