@@ -1,0 +1,8 @@
+{
+  "channel": "aetherion",
+  "branch": "private/aetherion",
+  "version": "0.1.0",
+  "tag": "aetherion/v0.1.0",
+  "releasedAt": "2026-06-17T00:00:00.000Z",
+  "notes": "Initial Aetherion private channel — bootstrap from main."
+}

@@ -1,0 +1,43 @@
+name: Aetherion release
+
+on:
+  push:
+    tags:
+      - "aetherion/v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read manifest
+        id: manifest
+        run: |
+          VERSION=$(jq -r .version aetherion-release.json)
+          NOTES=$(jq -r .notes aetherion-release.json)
+          RELEASED=$(jq -r .releasedAt aetherion-release.json)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "notes<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$NOTES" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "released=$RELEASED" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Aetherion v${{ steps.manifest.outputs.version }}"
+          body: |
+            **Private channel** — deploy on Aetherion only.
+
+            **Released:** ${{ steps.manifest.outputs.released }}
+
+            ${{ steps.manifest.outputs.notes }}
+
+            Branch: `private/aetherion`
+          draft: false
+          prerelease: true
+          generate_release_notes: true

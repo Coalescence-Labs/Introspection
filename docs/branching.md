@@ -82,6 +82,18 @@ Used for prototypes and exploratory ideas. These branches may evolve into featur
 
 ---
 
+### `private/aetherion`
+
+**Private deployment channel** for unreleased work on Aetherion (local Raspberry Pi). Not merged to `develop` or `main` until promoted.
+
+- Tagged releases: `aetherion/vX.Y.Z` (separate from public `v*` tags)
+- Manifest: `aetherion-release.json`
+- Synced with `main` and `develop` via `./scripts/aetherion-sync.sh` and GitHub Actions
+
+See [docs/aetherion-channel.md](./aetherion-channel.md).
+
+---
+
 ## Development Workflow
 
 ### 1. Sync `develop`
