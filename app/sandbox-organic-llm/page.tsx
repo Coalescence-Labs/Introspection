@@ -3,10 +3,11 @@ import { SandboxOrganicLlmPageClient } from "@/components/sandbox-organic-llm-pa
 import { loadQuestions, loadTodayConfig } from "@/lib/content/loader";
 import { getTodayQuestion } from "@/lib/content/rotation";
 import { isOrganicHandoffEnabled } from "@/lib/organic/handoff-config";
+import { isDevOnlyRouteEnabled } from "@/lib/preview-mode";
 import { getTodayString } from "@/lib/utils";
 
 export default async function SandboxOrganicLlmPage() {
-  if (process.env.NODE_ENV === "production") {
+  if (!isDevOnlyRouteEnabled()) {
     redirect("/");
   }
 

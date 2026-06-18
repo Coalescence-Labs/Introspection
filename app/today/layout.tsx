@@ -1,6 +1,7 @@
 import { connection } from "next/server";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { TodayPageShell } from "@/components/today-page-client";
+import { isPreviewModeEnabled } from "@/lib/preview-mode";
 import { getTodayLabel } from "@/lib/utils";
 
 interface TodayLayoutProps {
@@ -14,10 +15,13 @@ interface TodayLayoutProps {
 export default async function TodayLayout({ children }: TodayLayoutProps) {
   await connection();
   const todayLabel = getTodayLabel();
+  const previewModeEnabled = isPreviewModeEnabled();
 
   return (
     <main className="mx-auto max-w-5xl px-6 flex flex-col gap-20">
-      <TodayPageShell todayLabel={todayLabel}>{children}</TodayPageShell>
+      <TodayPageShell todayLabel={todayLabel} previewModeEnabled={previewModeEnabled}>
+        {children}
+      </TodayPageShell>
       <footer className="select-none pb-16 text-center text-xs text-muted-foreground">
         <div className="mb-4 flex justify-center">
           <ThemeToggle tabIndex={0} aria-label="Toggle theme" />

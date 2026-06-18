@@ -37,9 +37,11 @@ export function useTodayPage() {
  */
 export function TodayPageShell({
   todayLabel,
+  previewModeEnabled = false,
   children,
 }: {
   todayLabel: string;
+  previewModeEnabled?: boolean;
   children: React.ReactNode;
 }) {
   const [selectedLLM, setSelectedLLM] = useState<LLMType>("claude");
@@ -120,17 +122,28 @@ export function TodayPageShell({
     <TodayPageContext.Provider value={value}>
       <section className="flex flex-col py-16 sm:py-20" style={{ height: "100dvh" }}>
         {/* Header: date label (from server) and link to library. */}
-        <div className="mb-16 sm:mb-20 flex items-center justify-between">
+        <div className="mb-16 sm:mb-20 flex items-center justify-between gap-4">
           <div className="select-none text-xs text-muted-foreground">
             Daily Question • {todayLabel}
           </div>
-          <Link
-            href="/library"
-            className="select-none text-sm text-muted-foreground transition-colors hover:text-foreground"
-            tabIndex={0}
-          >
-            Browse all questions →
-          </Link>
+          <div className="flex items-center gap-4">
+            {previewModeEnabled ? (
+              <Link
+                href="/sandbox-organic-llm"
+                className="select-none text-sm text-muted-foreground transition-colors hover:text-foreground"
+                tabIndex={0}
+              >
+                Organic LLM sandbox →
+              </Link>
+            ) : null}
+            <Link
+              href="/library"
+              className="select-none text-sm text-muted-foreground transition-colors hover:text-foreground"
+              tabIndex={0}
+            >
+              Browse all questions →
+            </Link>
+          </div>
         </div>
         {children}
         {/* Controls: LLM selector, speech-friendly toggle, copy button. */}

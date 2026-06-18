@@ -2,13 +2,14 @@ import { redirect } from "next/navigation";
 import { PreviewPageClient } from "@/components/preview-page-client";
 import { loadQuestions, loadTodayConfig } from "@/lib/content/loader";
 import { getTodayQuestion } from "@/lib/content/rotation";
+import { isDevOnlyRouteEnabled } from "@/lib/preview-mode";
 import { getTodayString } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 /** Dev-only preview: today's question and generated prompts for all LLMs. Redirects to / in production. */
 export default async function PreviewPage() {
-  if (process.env.NODE_ENV === "production") {
+  if (!isDevOnlyRouteEnabled()) {
     redirect("/");
   }
 
@@ -20,5 +21,11 @@ export default async function PreviewPage() {
 
   const todayLabel = getTodayString();
 
-  return <PreviewPageClient initialQuestion={todayQuestion} todayLabel={todayLabel} />;
+  return (
+    <PreviewPageClient
+      initialQuestion={todayQuestion}
+      todayLabel={todayLabel}
+      devOnlyRouteEnabled={isDevOnlyRouteEnabled()}
+    />
+  );
 }

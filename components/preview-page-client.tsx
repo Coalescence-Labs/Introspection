@@ -11,16 +11,21 @@ const llms: LLMType[] = ["claude", "chatgpt", "gemini", "perplexity"];
 interface PreviewPageClientProps {
   initialQuestion: Question;
   todayLabel: string;
+  devOnlyRouteEnabled: boolean;
 }
 
-/** Dev-only: shows today's question and generated prompts for all LLMs. Redirects to / in production. */
-export function PreviewPageClient({ initialQuestion, todayLabel }: PreviewPageClientProps) {
+/** Dev-only: shows today's question and generated prompts for all LLMs. Redirects to / when route disabled. */
+export function PreviewPageClient({
+  initialQuestion,
+  todayLabel,
+  devOnlyRouteEnabled,
+}: PreviewPageClientProps) {
   const [prompts, setPrompts] = useState<Record<LLMType, { title: string; fullPrompt: string }>>(
     {} as Record<LLMType, { title: string; fullPrompt: string }>
   );
 
   useEffect(() => {
-    if (process.env.NODE_ENV !== "development") {
+    if (!devOnlyRouteEnabled) {
       window.location.href = "/";
       return;
     }
@@ -36,9 +41,9 @@ export function PreviewPageClient({ initialQuestion, todayLabel }: PreviewPageCl
       });
     }
     setPrompts(generated);
-  }, [initialQuestion]);
+  }, [initialQuestion, devOnlyRouteEnabled]);
 
-  if (process.env.NODE_ENV !== "development") {
+  if (!devOnlyRouteEnabled) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-muted-foreground">Redirecting...</div>
