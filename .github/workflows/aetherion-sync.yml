@@ -1,0 +1,32 @@
+name: Aetherion channel sync
+
+on:
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sync private/aetherion with main and develop
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin main develop private/aetherion || true
+          if ! git show-ref --verify --quiet refs/remotes/origin/private/aetherion; then
+            echo "private/aetherion does not exist on origin yet; skipping."
+            exit 0
+          fi
+          git checkout private/aetherion
+          git merge origin/main --no-edit -m "chore(aetherion): sync origin/main [skip ci]"
+          git merge origin/develop --no-edit -m "chore(aetherion): sync origin/develop [skip ci]"
+          git push origin private/aetherion
