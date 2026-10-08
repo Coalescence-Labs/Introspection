@@ -18,6 +18,7 @@ export const GenerationConfigSchema = z.object({
     noveltyJudge: ModelIdSchema,
     clarityJudge: ModelIdSchema,
     toneJudge: ModelIdSchema,
+    utility: ModelIdSchema
   }),
 
   scoring: z.object({

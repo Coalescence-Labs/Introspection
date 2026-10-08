@@ -127,11 +127,13 @@ const MAX_GENERATE = 20;
 const MAX_NETWORK_COUNT = 50;
 
 const ALLOWED_MODELS: { label: string; id: GatewayModelId }[] = [
-  { label: "gpt-5.2", id: "openai/gpt-5.2" as GatewayModelId },
-  { label: "opus-4.6", id: "anthropic/claude-opus-4.6" as GatewayModelId },
-  { label: "sonnet-4.6", id: "anthropic/claude-sonnet-4.6" as GatewayModelId },
-  { label: "Gemini 3 Pro", id: "google/gemini-3-pro" as GatewayModelId },
-  { label: "Kimi K2.5", id: "moonshotai/kimi-k2.5" as GatewayModelId },
+  { label: "gpt-6.1-sol", id: "openai/gpt-6.1-sol" as GatewayModelId },
+  { label: "gpt-6-luna", id: "openai/gpt-6-luna" as GatewayModelId },
+  { label: "gpt-6-astra", id: "openai/gpt-6-astra" as GatewayModelId },
+  { label: "opus-5.5", id: "anthropic/claude-opus-5.5" as GatewayModelId },
+  { label: "sonnet-5.5", id: "anthropic/claude-sonnet-5.5" as GatewayModelId },
+  { label: "Gemini 3.1 Pro", id: "google/gemini-3.1-pro-preview" as GatewayModelId },
+  { label: "Kimi K3", id: "moonshotai/kimi-k3" as GatewayModelId },
 ];
 
 function printBanner(): void {

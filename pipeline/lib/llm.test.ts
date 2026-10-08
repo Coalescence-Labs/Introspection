@@ -156,8 +156,8 @@ test("generateQuestions clamps count to 1..50", async () => {
 test("generateQuestions unwraps questions array from parsed result", async () => {
   generateTextResults.length = 0;
   const questions: LLMGeneratedDailyQuestion[] = [
-    { category: "a", simple_text: "First?" },
-    { category: "b", simple_text: "Second?" },
+    { category: "career", simple_text: "First?" },
+    { category: "learning", simple_text: "Second?" },
   ];
   generateTextResults.push({
     output: { questions },
