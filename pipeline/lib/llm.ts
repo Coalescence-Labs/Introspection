@@ -163,7 +163,7 @@ export async function generateQuestions(
  * Future: add more dynamic context (recent questions, diversity hints).
  */
 function buildUserPrompt(context?: string): string {
-  let prompt = `Draft 3 candidates internally, pick the best, output only final JSON.`;
+  let prompt = `Generate one introspective question using the system prompt's selection and quality requirements. Output only the final JSON object.`;
   if (context) {
     prompt += `\nContext: \n${context}`;
   }
@@ -174,7 +174,7 @@ function buildUserPrompt(context?: string): string {
  * Prompt for generating multiple questions in one call. Output must be JSON with a "questions" array.
  */
 function buildUserPromptForBatch(count: number, context?: string): string {
-  let prompt = `Generate exactly ${count} distinct questions. Output only valid JSON with a single key "questions" whose value is an array of ${count} objects. Each object must match the schema (category, simple_text). Ensure variety: different angles, categories, and phrasing. Do not duplicate or lightly rephrase.`;
+  let prompt = `Generate exactly ${count} distinct introspective questions using the system prompt's selection and quality requirements. Output only valid JSON with a single key "questions" whose value is an array of ${count} objects. Each object must match the schema (category, simple_text). Vary evidence targets and introspective lenses, not just phrasing or categories. Do not duplicate or lightly rephrase.`;
   if (context) {
     prompt += `\nContext:\n${context}`;
   }
