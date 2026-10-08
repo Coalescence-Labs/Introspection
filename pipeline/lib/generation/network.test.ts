@@ -1,5 +1,6 @@
 import { expect, mock, test } from "bun:test";
 import type { LLMGeneratedDailyQuestion } from "../schema";
+import { generationConfig } from "@/pipeline/config/generation"
 
 const fiveQuestions: LLMGeneratedDailyQuestion[] = [
   { category: "reflection", simple_text: "Q1?" },
@@ -19,7 +20,7 @@ mock.module("../llm", () => ({
   generateQuestions: async () => ({
     ok: true as const,
     data: fiveQuestions,
-    modelId: "openai/gpt-5.2",
+    modelId: generationConfig.models.generator,
     runId: undefined,
     usage: { promptTokens: 10, completionTokens: 20, totalTokens: 30 },
   }),
@@ -31,7 +32,7 @@ mock.module("../llm-metrics", () => ({
     return {
       ok: true as const,
       data: result.data,
-      modelId: "openai/gpt-5.2",
+      modelId: generationConfig.models.utility,
       runId: undefined,
       performanceMetrics: { latencyMs: 100 },
     };
@@ -62,7 +63,7 @@ test("runDailyNetwork returns partial on judge failure so caller can persist", a
     generateQuestions: async () => ({
       ok: true as const,
       data: fiveQuestions,
-      modelId: "openai/gpt-5.2",
+      modelId: generationConfig.models.generator,
       runId: undefined,
       usage: { promptTokens: 10, completionTokens: 20, totalTokens: 30 },
     }),
@@ -84,7 +85,7 @@ test("runDailyNetwork returns partial on judge failure so caller can persist", a
       return {
         ok: true as const,
         data: makeJudgeOutput(scores) as T,
-        modelId: "openai/gpt-5.2",
+        modelId: generationConfig.models.toneJudge,
         runId: undefined,
         performanceMetrics: { latencyMs: 100 },
       };
@@ -125,7 +126,7 @@ test("runDailyNetwork returns shape and compile/rank/benchmark", async () => {
     generateQuestions: async () => ({
       ok: true as const,
       data: fiveQuestions,
-      modelId: "openai/gpt-5.2",
+      modelId: generationConfig.models.generator,
       runId: undefined,
       usage: { promptTokens: 10, completionTokens: 20, totalTokens: 30 },
       performanceMetrics: { latencyMs: 50 },
@@ -158,7 +159,7 @@ test("runDailyNetwork returns shape and compile/rank/benchmark", async () => {
       return {
         ok: true as const,
         data: makeJudgeOutput(scores) as T,
-        modelId: "openai/gpt-5.2",
+        modelId: generationConfig.models.utility,
         runId: undefined,
         usage: { promptTokens: 50, completionTokens: 100, totalTokens: 150 },
         performanceMetrics: { latencyMs: 100 },
@@ -223,7 +224,7 @@ test("runDailyNetwork with questionCount override uses that count and returns ju
     generateQuestions: async () => ({
       ok: true as const,
       data: twoQuestions,
-      modelId: "openai/gpt-5.2",
+      modelId: generationConfig.models.generator,
       runId: undefined,
       usage: { promptTokens: 10, completionTokens: 20, totalTokens: 30 },
       performanceMetrics: { latencyMs: 50 },
@@ -239,7 +240,7 @@ test("runDailyNetwork with questionCount override uses that count and returns ju
       return {
         ok: true as const,
         data: makeJudgeOutput(scores) as T,
-        modelId: "openai/gpt-5.2",
+        modelId: generationConfig.models.utility,
         runId: undefined,
         usage: { promptTokens: 50, completionTokens: 100, totalTokens: 150 },
         performanceMetrics: { latencyMs: 100 },
@@ -264,7 +265,7 @@ test("runDailyNetwork merges scores by candidateId when judge returns shuffled o
     generateQuestions: async () => ({
       ok: true as const,
       data: fiveQuestions,
-      modelId: "openai/gpt-5.2",
+      modelId: generationConfig.models.generator,
       runId: undefined,
       usage: { promptTokens: 10, completionTokens: 20, totalTokens: 30 },
       performanceMetrics: { latencyMs: 50 },
@@ -294,7 +295,7 @@ test("runDailyNetwork merges scores by candidateId when judge returns shuffled o
       return {
         ok: true as const,
         data: makeJudgeOutput(scores) as T,
-        modelId: "openai/gpt-5.2",
+        modelId: generationConfig.models.utility,
         runId: undefined,
         usage: { promptTokens: 50, completionTokens: 100, totalTokens: 150 },
         performanceMetrics: { latencyMs: 100 },
@@ -323,7 +324,7 @@ test("runDailyNetwork returns invalid_judge_output when judge returns wrong cand
     generateQuestions: async () => ({
       ok: true as const,
       data: fiveQuestions,
-      modelId: "openai/gpt-5.2",
+      modelId: generationConfig.models.generator,
       runId: undefined,
       usage: { promptTokens: 10, completionTokens: 20, totalTokens: 30 },
       performanceMetrics: { latencyMs: 50 },
@@ -342,7 +343,7 @@ test("runDailyNetwork returns invalid_judge_output when judge returns wrong cand
       return {
         ok: true as const,
         data: makeJudgeOutput(scores) as T,
-        modelId: "openai/gpt-5.2",
+        modelId: generationConfig.models.utility,
         runId: undefined,
         usage: { promptTokens: 50, completionTokens: 100, totalTokens: 150 },
         performanceMetrics: { latencyMs: 100 },

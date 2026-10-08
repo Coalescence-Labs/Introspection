@@ -30,7 +30,7 @@ import {
 import { LIBRARY_NOVELTY_CAP } from "./lib/generation";
 
 let runId: string | null = null;
-const modelId: GatewayModelId = "openai/gpt-5.2";
+const modelId: GatewayModelId = "openai/gpt-6.1-sol";
 let targetDate: string | undefined;
 
 const RECORD_RUN_RESULT_MAX_ATTEMPTS = 3;
