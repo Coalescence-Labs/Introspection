@@ -1,4 +1,5 @@
 import { expect, mock, test } from "bun:test";
+import { DAILY_GENERATOR_PROMPT, EXPANSIVE_GENERATOR_PROMPT } from "./prompts";
 import type { LLMGeneratedDailyQuestion } from "./schema";
 
 type GenerateTextResult = {
@@ -8,12 +9,14 @@ type GenerateTextResult = {
 };
 
 const generateTextResults: (GenerateTextResult | { throw: Error })[] = [];
+const generateTextCalls: { system?: string; prompt?: string }[] = [];
 
 mock.module("ai", () => {
   const ai = require("ai");
   return {
     ...ai,
-    generateText: async (_opts: { system?: string; prompt?: string }) => {
+    generateText: async (opts: { system?: string; prompt?: string }) => {
+      generateTextCalls.push(opts);
       const preset = generateTextResults.shift();
       if (preset && "throw" in preset) throw preset.throw;
       if (preset && "output" in preset) return preset;
@@ -111,6 +114,23 @@ test("generateDailyQuestion adds dateGeneratedFor on success", async () => {
   expect(result.data?.simple_text).toBe("What step will you take next?");
 });
 
+test("generateDailyQuestion delegates selection to the shared system requirements", async () => {
+  generateTextResults.length = 0;
+  generateTextCalls.length = 0;
+  const context = "Recent daily questions:\n- What do I value?";
+
+  const result = await generateDailyQuestion({ date: "2025-03-10", context });
+
+  expect(result.ok).toBe(true);
+  expect(generateTextCalls).toHaveLength(1);
+  const options = generateTextCalls[0];
+  expect(options?.system).toBe(DAILY_GENERATOR_PROMPT);
+  expect(options?.prompt).toContain("using the system prompt's selection and quality requirements");
+  expect(options?.prompt).toContain("Output only the final JSON object");
+  expect(options?.prompt).toContain(context);
+  expect(options?.prompt).not.toContain("Draft 3 candidates");
+});
+
 test("generateDailyQuestion preserves failure from wrapper", async () => {
   generateTextResults.length = 0;
   generateTextResults.push({ throw: new Error("Model error") });
@@ -175,6 +195,33 @@ test("generateQuestions unwraps questions array from parsed result", async () =>
   expect(result.data).toHaveLength(2);
   expect(result.data[0].simple_text).toBe("First?");
   expect(result.data[1].simple_text).toBe("Second?");
+});
+
+test("generateQuestions requests distinct evidence targets with the exact count", async () => {
+  generateTextResults.length = 0;
+  generateTextCalls.length = 0;
+  generateTextResults.push({
+    output: {
+      questions: [
+        { category: "reflection", simple_text: "What do I value?" },
+        { category: "learning", simple_text: "What evidence do I cite when I change my mind?" },
+      ],
+    },
+    text: "raw",
+    totalUsage: { inputTokens: 1, outputTokens: 2, totalTokens: 3 },
+  });
+  const context = "Existing questions:\n- What do I keep returning to?";
+
+  const result = await generateQuestions({ count: 2, context });
+
+  expect(result.ok).toBe(true);
+  expect(generateTextCalls).toHaveLength(1);
+  const options = generateTextCalls[0];
+  expect(options?.system).toBe(EXPANSIVE_GENERATOR_PROMPT);
+  expect(options?.prompt).toContain("Generate exactly 2 distinct introspective questions");
+  expect(options?.prompt).toContain("an array of 2 objects");
+  expect(options?.prompt).toContain("Vary evidence targets and introspective lenses");
+  expect(options?.prompt).toContain(context);
 });
 
 test("generateQuestions preserves failure when wrapper returns error", async () => {
