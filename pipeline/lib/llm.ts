@@ -8,8 +8,9 @@ import {
 } from "./llm-metrics";
 import { DAILY_GENERATOR_PROMPT, EXPANSIVE_GENERATOR_PROMPT } from "./prompts";
 import { LLMGeneratedDailyQuestion, LLMGeneratedDailyQuestionArray } from "./schema";
+import { generationConfig } from "../config/generation";
 
-const DEFAULT_MODEL: GatewayModelId = "openai/gpt-5.2";
+const DEFAULT_MODEL: GatewayModelId = generationConfig.models.generator;
 
 interface GenerateDailyQuestionInput {
   date: string; // YYYY-MM-DD

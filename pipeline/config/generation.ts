@@ -12,10 +12,11 @@ const generationConfigSource = {
   generatorQuestionCount: 10,
 
   models: {
-    generator: "anthropic/claude-opus-4.6" as GatewayModelId,
-    noveltyJudge: "anthropic/claude-sonnet-4.6" as GatewayModelId,
-    clarityJudge: "anthropic/claude-sonnet-4.6" as GatewayModelId,
-    toneJudge: "anthropic/claude-sonnet-4.6" as GatewayModelId,
+    generator: "anthropic/claude-opus-5.5" as GatewayModelId,
+    noveltyJudge: "anthropic/claude-sonnet-5.5" as GatewayModelId,
+    clarityJudge: "anthropic/claude-sonnet-5.5" as GatewayModelId,
+    toneJudge: "anthropic/claude-sonnet-5.5" as GatewayModelId,
+    utility: "openai/gpt-6-luna" as GatewayModelId
   },
 
   scoring: {
