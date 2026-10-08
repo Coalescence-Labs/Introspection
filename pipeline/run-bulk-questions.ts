@@ -1,10 +1,11 @@
 import type { GatewayModelId } from "ai";
 import { type GenerateQuestionsOutput, generateQuestions } from "./lib/llm";
 import { getLibraryQuestions, insertGeneratedQuestions } from "./lib/supabase/queries";
+import { generationConfig } from "./config/generation";
 
 const COUNT = 5;
 const LIBRARY_CONTEXT_LIMIT = 50;
-const modelId: GatewayModelId = "openai/gpt-5.2-chat";
+const modelId: GatewayModelId = generationConfig.models.generator;
 
 const dryRun = process.argv.includes("--dry-run") || process.argv.includes("-d");
 
